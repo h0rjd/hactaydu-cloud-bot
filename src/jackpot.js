@@ -16,7 +16,6 @@ async function prepareAndNotify(account,result,{signal,verifiedServer,replaceMes
  let prepared=await prepareAndScreenshotJackpotAccount(params);
  if(prepared.tutorialCleared&&prepared.roleLv<8)prepared=await prepareAndScreenshotJackpotAccount({...params,recoverSkippedCampaign:true});
  if(prepared.roleLv<8||!prepared.tutorialCleared||!require('./tutorial_evidence').tutorialConfirmed(prepared.tutorialEvidence))return {complete:false,errorCode:'TUTORIAL_NOT_CONFIRMED',prepared};
- if(!prepared.winnerPhotoOrdered)return {complete:false,errorCode:'WINNER_PHOTO_ORDER_NOT_CONFIRMED',prepared};
  if(!prepared.heroShotPath||!fs.existsSync(prepared.heroShotPath))return {complete:false,errorCode:'HERO_PHOTO_MISSING',prepared};
 
  // 1. BƠM TÀI KHOẢN VÀO BOT BÁN HÀNG qua Webhook

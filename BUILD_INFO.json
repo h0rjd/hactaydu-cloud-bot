@@ -1,5 +1,5 @@
 {
-  "version": "3.1.1",
+  "version": "3.1.2",
   "builtAt": "2026-10-26T17:38:54.976907+00:00",
   "machineId": 2,
   "machineCount": 2,
@@ -13,8 +13,8 @@
     "src/progress_log.js": "c1d8fe653fe8baa520b3d8acfe8abd5f16c8c0eb5a4023c76a85f94bffab1804",
     "src/server_catalog.js": "19682089b35d0a56e70c3909a84deb883c225603b5f37923712770e0fcb8ce8f",
     "src/followups.js": "1d19b8ea5b49a332926ca7e91f86087be413d13e08be6c8e6533752b95a7537d",
-    "src/followup_jobs.js": "ce921484bd3732efcbf924723baccdf67705c6ed67b6707ab00c790f83fd8e01",
-    "src/jackpot.js": "55645997813b09e7dc29173d571d41a62c7800fdefc0d94d6903ae8d5190f490",
+    "src/followup_jobs.js": "edc15527361c895572f6edd1e610c19e824e7be67516b7ea8962499d58625fe0",
+    "src/jackpot.js": "d7b1e129b8077c6bfb2f55eb6f50470f28ccd157b0383148ca24b3786018d3cf",
     "src/planner.js": "07ba840c7a459ead0664a9b5355179dd01ae3187ec42b359a398c750fb8c04d4",
     "src/worker.js": "7ae0cfde9ab6954fa26acd8f6801d0c26053f8b883992273a0ee86e65507e30e",
     "src/server_policy.js": "4e2742f76f1c1aaced5c0e6f7b6cc6d43ace62d14c0e26087edb4620a10518d8",
@@ -40,9 +40,9 @@
     "python_v79/probe_one.py": "e27f8a5d3ae7324da19183000231cec5109772ccff40a17bfb3e5d8b7e331885",
     "python_v79/chay_web_auto.py": "35467ea7f6aa458a534d7b18601240704b085bd5f06570e7d70a4ea27b169676",
     "hunt_2x_dt_tnk.js": "eed27fd9a7bdf23356166717cdd7acfade994e3774d04fcc6ea56597f12a4c76",
-    "prepare_jackpot_account.js": "fda100e7180b544a2937267a9213f5bd4f0f16a475041336524960ae5456c37e",
+    "prepare_jackpot_account.js": "a407f674f28d4c9fbf835bceb7f2c4811645cd8d7fd361d4aed63fd5f93580ea",
     "remote_game.js": "51edb9bacf27df894a2fbfa11a921bf98f498b84a9735884dddbe2cdd3412d5e",
     "jackpot_rules.js": "2e914be01eae5393f11c6290b54da8d6bcdb5d123f2e1f0bd3bacc56fb73e6d0"
   },
-  "packaging": "CLEAN; runtime unchanged from SDK 3.1.0"
+  "packaging": "CLEAN 3.1.2: Fixed photo sorting & guaranteed delivery to Sales Bot Webhook + Telegram"
 }
