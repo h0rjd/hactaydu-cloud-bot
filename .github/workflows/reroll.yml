@@ -66,7 +66,7 @@ jobs:
         run: |
           git config user.name "D-AUTO Bot"
           git config user.email "bot@dauto.local"
-          git add -f state/ processed_accounts.json jackpot_locked_vault.json accounts.json DAN_NICK_TRUNG_TUONG.* DANH_SACH_NICK_D_AUTO.* jackpot_screenshots/ || true
+          for f in state processed_accounts.json jackpot_locked_vault.json accounts.json DAN_NICK_TRUNG_TUONG.* DANH_SACH_NICK_D_AUTO.* jackpot_screenshots; do [ -e "$f" ] && git add -f "$f"; done
           git diff --staged --quiet || (git commit -m "chore: save state and winners [skip ci]" && git pull -s ort -X ours --no-edit origin main && git push origin HEAD:main)
 
   chain-next:
