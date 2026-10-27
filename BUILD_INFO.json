@@ -1,5 +1,5 @@
 {
-  "version": "v3.1.4",
+  "version": "v3.1.5",
   "builtAt": "2026-10-26T17:38:54.976907+00:00",
   "machineId": 2,
   "machineCount": 2,
@@ -30,7 +30,7 @@
     "src/adapters/reroll.js": "575a77583fa658f588406736af4e43f481cdbd94e49132cc7efc7f1c77735027",
     "src/adapters/register.js": "b967d9189fbfdd6dbb3de724194139b2acc827eb278a0908216a5c75a64a5b27",
     "scripts/stop-live.js": "fe6f64554161dd978707150eeffbadbf73f127cefe8dfc4826584fac6a6895c7",
-    "scripts/run-v79-latest.js": "addcd129430edf6a00d4014cafd3e1a063ae5e6477a027a867ece8a41595da54",
+    "scripts/run-v79-latest.js": "fbab6871b87532e8c6c2582625056d6286ff02a3b3169dbd54d0969d9d2b842a",
     "scripts/set-windows-defaults.js": "35eb5759c794f285e3fddcd715a473a06bf1f7fd7048151c00a07a6bd9d79125",
     "scripts/start-live.js": "b33023976c2b19aa343cebd5dae906f5a5fdd90f8108d9d4fc9e178655887ca9",
     "scripts/followup-worker.js": "b1266a2539b85c49e8251dafbaf3c472ff4dba117f3117202c01812d1a5ba2eb",
