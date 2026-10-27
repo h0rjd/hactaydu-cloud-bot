@@ -58,6 +58,7 @@ jobs:
           echo "🤖 Starting D-AUTO on Machine: $MACHINE_NAME"
           echo "📁 Using Accounts File: $ACCOUNTS_PATH"
           echo "=========================================================="
+          rm -f state/*.lock state/*/*.lock state/*/*/*.lock 2>/dev/null || true
           timeout 19200 node scripts/run-v79-latest.js || true
 
       - name: 💾 Save State and Winners to GitHub
