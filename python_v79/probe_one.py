@@ -8,13 +8,21 @@ class ObservedClaims(Original):
   super().__init__(min_interval=0.18,timeout=1.8,max_attempts=7,reconnect_on_timeout=False)
   self.sent=set()
   self.outcomes={}
+  self._consecutive_claimed=0
  def record_packet(self,packet):
   pending=self._pending
   before=pending in self.confirmed
   super().record_packet(packet)
   if pending and not before and pending in self.confirmed:
    msg=int.from_bytes(packet[2:4],'big')
+   is_claimed=(msg!=144)
    self.outcomes[pending]='redeemed' if msg==144 else 'already_claimed'
+   if is_claimed:
+    self._consecutive_claimed+=1
+    if self._consecutive_claimed>=2 and len(self.outcomes)==self._consecutive_claimed:
+     self._abort=True
+   else:
+    self._consecutive_claimed=0
  async def claim_all(self,codes,send,reconnect,stopped,progress):
   def observed(index,total,code,attempt):
    progress(index,total,code,attempt)
@@ -26,6 +34,10 @@ class ObservedClaims(Original):
    await send(code)
    self.sent.add(code)
   await super().claim_all(codes,tracked_send,reconnect,stopped,observed)
+  if self._abort and self._consecutive_claimed>=2:
+   for c in codes:
+    self.outcomes.setdefault(c,'already_claimed')
+    self.confirmed.add(c)
 v.GiftcodeClaims=ObservedClaims
 def strict_auth(account_id,token=None):
  if not token or token=='r':raise RuntimeError('SDK_TOKEN_REQUIRED')
