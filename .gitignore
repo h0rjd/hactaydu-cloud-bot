@@ -6,3 +6,7 @@ python_v79/.venv/
 .DS_Store
 *.lock
 **/*.lock
+state/*
+!state/.gitkeep
+!state/progress.json
+!state/live-settings.json
