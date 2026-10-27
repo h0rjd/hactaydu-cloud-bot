@@ -1,6 +1,8 @@
 {
-  "sid": "610097",
-  "name": "Bàn Tơ Động-S7",
-  "wsUrl": "wss://wss-funtap-xy.xinliugame.net:9123/",
+  "sid": "610098",
+  "id": 98,
+  "name": "[S98] Bàn Tơ Động-S8",
+  "rawName": "Bàn Tơ Động-S8",
+  "wsUrl": "wss://wss-funtap-xy.xinliugame.net:9124/",
   "status": "1"
 }
