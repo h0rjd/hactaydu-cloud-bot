@@ -1,0 +1,12 @@
+{
+  "initialChapterID": 1,
+  "currentChapterID": 2,
+  "wins": 8,
+  "lastState": {
+    "canBattle": 1,
+    "canNextChapter": 0,
+    "needLv": 5,
+    "wait": 0,
+    "finishID": 8
+  }
+}
