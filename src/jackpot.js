@@ -3,7 +3,10 @@ const esc=x=>String(x??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>
 function captionFor(account,result,prepared,title='NỔ NÒNG CỐT & ĐÃ QUA TÂN THỦ (Lv.8+)'){
  const machine=readJSON(path.join(__dirname,'../machine.json'),{});const machineName=process.env.MACHINE_NAME||machine.machineName||`M${machine.machineId||1}`;
  const pairs=Object.entries(result.counts||{}).filter(([,n])=>n>0).map(([n,c])=>`${n} x${c}`).join(' + ')||'2x Thần Tướng';
- return `🔥🔥 <b>[${esc(title)}]</b>\n🖥 Máy chạy: <b>${esc(machineName)}</b>\n🌐 Server: <b>${esc(result.serverName)}</b> (<code>${esc(result.sid)}</code>)\n👤 TK: <code>${esc(account.username)}</code> | MK: <code>${esc(account.password)}</code>\n🆔 UID: <code>${esc(prepared.roleUid)}</code> | AccID: <code>${esc(account.accId)}</code>\n🎭 Nhân vật: <b>${esc(prepared.roleName)}</b> (Lv.${esc(prepared.roleLv)}) | Ngọc: <b>${esc(prepared.zuanshiLeft)} 💎</b>\n🔥 Tướng nổ: <b>${esc(pairs)}</b> (Tổng 5★: <b>${esc(result.heroes5StarCount)}</b>)\n🔒 <i>Đã khóa két bảo vệ &amp; rút khỏi kho reroll!</i>`;
+ const sidNum=Number(result.sid);const sNum=sidNum>=600000?(sidNum-610000):sidNum;
+ const rawServerName=String(result.serverName||'').replace(/^\[S\d+[^\]]*\]\s*/i,'').replace(/^[sS]\d+[\s\-_:]*/,'').trim();
+ const displayServer=`[S${sNum}] ${rawServerName}`;
+ return `🔥🔥 <b>[${esc(title)}]</b>\n🖥 Máy chạy: <b>${esc(machineName)}</b>\n🌐 Server: <b>${esc(displayServer)}</b> (<code>${esc(result.sid)}</code>)\n👤 TK: <code>${esc(account.username)}</code> | MK: <code>${esc(account.password)}</code>\n🆔 UID: <code>${esc(prepared.roleUid)}</code> | AccID: <code>${esc(account.accId)}</code>\n🎭 Nhân vật: <b>${esc(prepared.roleName)}</b> (Lv.${esc(prepared.roleLv)}) | Ngọc: <b>${esc(prepared.zuanshiLeft)} 💎</b>\n🔥 Tướng nổ: <b>${esc(pairs)}</b> (Tổng 5★: <b>${esc(result.heroes5StarCount)}</b>)\n🔒 <i>Đã khóa két bảo vệ &amp; rút khỏi kho reroll!</i>`;
 }
 async function prepareAndNotify(account,result,{signal,verifiedServer,replaceMessageId,recoverSkippedCampaign=false,quietLogPath,onBeforeTelegram}={}){
  const {prepareAndScreenshotJackpotAccount}=require('../prepare_jackpot_account');
@@ -24,6 +27,11 @@ async function prepareAndNotify(account,result,{signal,verifiedServer,replaceMes
  const webhookUrl=process.env.SALES_BOT_WEBHOOK_URL||'https://152-69-209-107.sslip.io/api/v1/inventory/hactaydu-webhook';
  const webhookSecret=process.env.SALES_BOT_SECRET||'d57be08c4bbbc9c7feda86285611ee41fc8016d4f1bf4a1a7a60502d123b0ab3';
 
+ const sidNum=Number(result.sid);const sNum=sidNum>=600000?(sidNum-610000):sidNum;
+ const rawServerName=String(result.serverName||'').replace(/^\[S\d+[^\]]*\]\s*/i,'').replace(/^[sS]\d+[\s\-_:]*/,'').trim();
+ const displayServer=`[S${sNum}] ${rawServerName}`;
+ const serverCol=`${displayServer} (${result.sid})`;
+
  let photoB64='';
  try{photoB64=fs.readFileSync(prepared.heroShotPath).toString('base64');}catch(_){}
  const pairs=Object.entries(result.counts||{}).filter(([,n])=>n>0).map(([n,c])=>`${c}x ${n}`).join(' + ')||(winningNames.length?`2x ${winningNames[0]}`:'2x Thần Tướng');
@@ -34,7 +42,11 @@ async function prepareAndNotify(account,result,{signal,verifiedServer,replaceMes
   password:account.password,
   funtap_id:String(account.accId),
   server_id:Number(result.sid),
-  server_name:result.serverName,
+  server_num:sNum,
+  server_name:displayServer,
+  server:serverCol,
+  server_display:displayServer,
+  sid:Number(result.sid),
   level:prepared.roleLv||8,
   diamonds:prepared.zuanshiLeft||1800,
   role_uid:prepared.roleUid||`${result.sid}${String(account.accId).slice(-5)}`,
@@ -45,11 +57,11 @@ async function prepareAndNotify(account,result,{signal,verifiedServer,replaceMes
   heroes_5star:result.rawV79?.heroes5Star||[],
   screenshot_path:prepared.heroShotPath,
   screenshot_base64:photoB64,
-  screenshot_filename:`${account.username}_S${result.sid}.jpg`,
+  screenshot_filename:`${account.username}_S${sNum}.jpg`,
   codes_claimed:`${result.cdkAckedCount||28}/28`,
   unconfirmed_codes:result.cdkUnconfirmedCodes||[],
   unconfirmed_codes_str:(result.cdkUnconfirmedCodes||[]).join(', '),
-  notes:`${result.serverName} -> ${pairs} | Code: ${result.cdkAckedCount||28}/28 | Ngọc=${prepared.zuanshiLeft||1800} | Tổng 5★=${result.heroes5StarCount}`,
+  notes:`${displayServer} -> ${pairs} | Code: ${result.cdkAckedCount||28}/28 | Ngọc=${prepared.zuanshiLeft||1800} | Tổng 5★=${result.heroes5StarCount}`,
   time:new Date().toISOString()
  };
 
@@ -62,7 +74,7 @@ async function prepareAndNotify(account,result,{signal,verifiedServer,replaceMes
    signal:AbortSignal.timeout(15000)
   });
   const wbData=await wbResp.json().catch(()=>({}));
-  console.log(`🤖 [Bot Bán Hàng] Đã bơm tài khoản ${account.username} (Máy: ${machineName}) vào Bot Bán Hàng! (${wbData.status||wbResp.status})`);
+  console.log(`🤖 [Bot Bán Hàng] Đã bơm tài khoản ${account.username} (Máy: ${machineName} | ${displayServer}) vào Bot Bán Hàng! (${wbData.status||wbResp.status})`);
   webhookSuccess=true;
  }catch(wbErr){
   console.warn(`⚠️ [Bot Bán Hàng] Lỗi webhook: ${wbErr.message}`);
@@ -71,7 +83,7 @@ async function prepareAndNotify(account,result,{signal,verifiedServer,replaceMes
  // 2. Ghi nhận vào file DAN_NICK_TRUNG_TUONG.txt
  try{
   const txtPath=path.join(__dirname,'../DAN_NICK_TRUNG_TUONG.txt');
-  const line=`${account.username} | ${account.password} | ${result.serverName} (${result.sid}) | [X2] ${pairs} | ${result.heroes5StarCount}★ | ${prepared.heroShotPath} | ${account.accId} | ${prepared.heroShotPath} | ${new Date().toISOString()} | Đủ code\n`;
+  const line=`${account.username} | ${account.password} | ${serverCol} | [X2] ${pairs} | ${result.heroes5StarCount}★ | ${prepared.heroShotPath} | ${account.accId} | ${prepared.heroShotPath} | ${new Date().toISOString()} | Đủ code\n`;
   fs.appendFileSync(txtPath,line,'utf-8');
  }catch(_){}
 
