@@ -1047,85 +1047,92 @@ async function prepareAndScreenshotJackpotAccount({
     }
 
     // Tự động sắp xếp 2 hoặc 3 tướng jackpot đứng kề nhau ngay hàng đầu (Slot 1 & Slot 2)
-    const photoOrder = await page.evaluate(({ targetHeroIds, targetHeroNames }) => {
-      try {
-        const normNames = (targetHeroNames || []).map(n => String(n || '').toLowerCase().trim());
-        const idSet = new Set((targetHeroIds || []).map(Number).filter(x => x > 0));
+    let photoOrder = { top: [], ordered: false, topMatchCount: 0, totalRows: 0 };
+    for (let bagTry = 0; bagTry < 12; bagTry++) {
+      photoOrder = await page.evaluate(({ targetHeroIds, targetHeroNames }) => {
+        try {
+          const normNames = (targetHeroNames || []).map(n => String(n || '').toLowerCase().trim());
+          const idSet = new Set((targetHeroIds || []).map(Number).filter(x => x > 0));
 
-        const isMatch = (h) => {
-          if (!h) return false;
-          const hid = Number(h.id || h.heroId || h.heroSimple?.id || h.cfgId || 0);
-          if (hid > 0 && idSet.has(hid)) return true;
-          const raw = (String(h.name || '') + ' ' + String(h.heroSimple?.name || '') + ' ' + String(h.heroName || '') + ' ' + String(h.name_cn || '')).toLowerCase();
-          for (const t of normNames) {
-            if (!t) continue;
-            if (raw.includes(t) || t.includes(raw)) return true;
-            if (t.includes('ngọc diện') && (raw.includes('ngoc dien') || raw.includes('ngọc diện') || raw.includes('玉面'))) return true;
-            if (t.includes('trấn nguyên') && (raw.includes('tran nguyen') || raw.includes('trấn nguyên') || raw.includes('镇元'))) return true;
-            if (t.includes('lý tịnh') && (raw.includes('ly tinh') || raw.includes('lý tịnh') || raw.includes('李靖') || raw.includes('托塔'))) return true;
-            if (t.includes('ngưu ma') && (raw.includes('nguu ma') || raw.includes('ngưu ma') || raw.includes('牛魔'))) return true;
-            if (t.includes('thiết phiến') && (raw.includes('thiet phien') || raw.includes('thiết phiến') || raw.includes('铁扇'))) return true;
-            if (t.includes('hồng hài') && (raw.includes('hong hai') || raw.includes('hồng hài') || raw.includes('红孩'))) return true;
-            if (t.includes('hàng long') && (raw.includes('hang long') || raw.includes('hàng long') || raw.includes('降龙'))) return true;
-            if (t.includes('hằng nga') && (raw.includes('hang nga') || raw.includes('hằng nga') || raw.includes('嫦娥'))) return true;
-            if (t.includes('hoàng my') && (raw.includes('hoang my') || raw.includes('hoàng my') || raw.includes('黄眉'))) return true;
-            if (t.includes('bát giới') && (raw.includes('bat gioi') || raw.includes('bát giới') || raw.includes('八戒'))) return true;
-            if (t.includes('ngộ không') && (raw.includes('ngo khong') || raw.includes('ngộ không') || raw.includes('孙悟空'))) return true;
-            if (t.includes('dương tiễn') && (raw.includes('duong tien') || raw.includes('dương tiễn') || raw.includes('杨戬'))) return true;
-            if (t.includes('na tra') && (raw.includes('na tra') || raw.includes('哪吒'))) return true;
-            if (t.includes('đường') && (raw.includes('duong tam tang') || raw.includes('đường tam tạng') || raw.includes('đường tăng') || raw.includes('唐僧'))) return true;
-            if (t.includes('cang kim') && (raw.includes('cang kim') || raw.includes('亢金'))) return true;
-          }
-          return false;
-        };
-
-        const comp = window.si?.getInstance()?.ui?.cardList?.list;
-        let rows = comp?.dataSource || comp?.array;
-        if (!Array.isArray(rows) || !rows.length) {
-          if (window.tt?.heros && Array.isArray(window.tt.heros)) rows = window.tt.heros;
-        }
-        if (!Array.isArray(rows) || !rows.length) {
-          return { top: [], ordered: false, topMatchCount: 0, totalRows: 0 };
-        }
-
-        // Đưa các tướng nòng cốt jackpot trùng khớp lên vị trí Slot 1 & Slot 2
-        rows.sort((a, b) => {
-          const isATarget = isMatch(a);
-          const isBTarget = isMatch(b);
-          if (isATarget && !isBTarget) return -1;
-          if (!isATarget && isBTarget) return 1;
-          return (b.star || 0) - (a.star || 0) || (b.lv || 0) - (a.lv || 0);
-        });
-
-        if (comp) {
-          comp.dataSource = rows;
-          comp.array = rows;
-          try {
-            if (comp.cells && comp.renderHandler) {
-              for (let i = 0; i < Math.min(6, rows.length); i++) {
-                if (comp.cells[i]) comp.renderHandler.runWith([comp.cells[i], i]);
-              }
+          const isMatch = (h) => {
+            if (!h) return false;
+            const hid = Number(h.id || h.heroId || h.heroSimple?.id || h.cfgId || 0);
+            if (hid > 0 && idSet.has(hid)) return true;
+            const raw = (String(h.name || '') + ' ' + String(h.heroSimple?.name || '') + ' ' + String(h.heroName || '') + ' ' + String(h.name_cn || '')).toLowerCase();
+            for (const t of normNames) {
+              if (!t) continue;
+              if (raw.includes(t) || t.includes(raw)) return true;
+              if (t.includes('ngọc diện') && (raw.includes('ngoc dien') || raw.includes('ngọc diện') || raw.includes('玉面') || hid === 4008 || hid === 2013)) return true;
+              if (t.includes('trấn nguyên') && (raw.includes('tran nguyen') || raw.includes('trấn nguyên') || raw.includes('镇元') || hid === 1014 || hid === 3012)) return true;
+              if (t.includes('lý tịnh') && (raw.includes('ly tinh') || raw.includes('lý tịnh') || raw.includes('李靖') || raw.includes('托塔') || hid === 1010)) return true;
+              if (t.includes('ngưu ma') && (raw.includes('nguu ma') || raw.includes('ngưu ma') || raw.includes('牛魔') || hid === 2006)) return true;
+              if (t.includes('thiết phiến') && (raw.includes('thiet phien') || raw.includes('thiết phiến') || raw.includes('铁扇') || hid === 2009 || hid === 2007)) return true;
+              if (t.includes('hồng hài') && (raw.includes('hong hai') || raw.includes('hồng hài') || raw.includes('红孩') || hid === 1012 || hid === 2012)) return true;
+              if (t.includes('hàng long') && (raw.includes('hang long') || raw.includes('hàng long') || raw.includes('降龙') || hid === 3006)) return true;
+              if (t.includes('hằng nga') && (raw.includes('hang nga') || raw.includes('hằng nga') || raw.includes('嫦娥') || hid === 2007 || hid === 1007)) return true;
+              if (t.includes('hoàng my') && (raw.includes('hoang my') || raw.includes('hoàng my') || raw.includes('黄眉') || hid === 3004)) return true;
+              if (t.includes('bát giới') && (raw.includes('bat gioi') || raw.includes('bát giới') || raw.includes('八戒') || hid === 2010)) return true;
+              if (t.includes('ngộ không') && (raw.includes('ngo khong') || raw.includes('ngộ không') || raw.includes('孙悟空') || hid === 3011 || hid === 2014)) return true;
+              if (t.includes('dương tiễn') && (raw.includes('duong tien') || raw.includes('dương tiễn') || raw.includes('杨戬') || hid === 3009 || hid === 1014)) return true;
+              if (t.includes('na tra') && (raw.includes('na tra') || raw.includes('哪吒') || hid === 3003 || hid === 3014)) return true;
+              if (t.includes('đường') && (raw.includes('duong tam tang') || raw.includes('đường tam tạng') || raw.includes('đường tăng') || raw.includes('唐僧') || hid === 1003 || hid === 3010)) return true;
+              if (t.includes('cang kim') && (raw.includes('cang kim') || raw.includes('亢金') || hid === 4003 || hid === 2015)) return true;
+              if (t.includes('bạch cốt') && (raw.includes('bach cot') || raw.includes('bạch cốt') || raw.includes('白骨') || hid === 1011)) return true;
             }
-          } catch (_) {}
-          if (comp.refresh) comp.refresh();
-          if (comp.scrollTo) comp.scrollTo(0);
-        }
+            return false;
+          };
 
-        const topIds = rows.slice(0, 6).map(h => h?.id || h?.heroSimple?.id || 0);
-        const topMatchCount = rows.slice(0, 2).filter(isMatch).length;
-        return {
-          top: topIds,
-          ordered: topMatchCount >= 2 || (rows.length === 1 && topMatchCount === 1) || (rows.length > 0 && isMatch(rows[0])),
-          topMatchCount,
-          totalRows: rows.length
-        };
-      } catch (err) {
-        return { top: [], ordered: false, error: err.message };
-      }
-    }, {
-      targetHeroIds: [...winningHeroIds],
-      targetHeroNames: targetHeroNames || []
-    });
+          const comp = window.si?.getInstance()?.ui?.cardList?.list;
+          let rows = comp?.dataSource || comp?.array;
+          if (!Array.isArray(rows) || !rows.length) {
+            if (window.tt?.heros && Array.isArray(window.tt.heros)) rows = window.tt.heros;
+          }
+          if (!Array.isArray(rows) || !rows.length) {
+            return { top: [], ordered: false, topMatchCount: 0, totalRows: 0 };
+          }
+
+          // Đưa các tướng nòng cốt jackpot trùng khớp lên vị trí Slot 1 & Slot 2
+          rows.sort((a, b) => {
+            const isATarget = isMatch(a);
+            const isBTarget = isMatch(b);
+            if (isATarget && !isBTarget) return -1;
+            if (!isATarget && isBTarget) return 1;
+            return (b.star || 0) - (a.star || 0) || (b.lv || 0) - (a.lv || 0);
+          });
+
+          if (comp) {
+            comp.dataSource = rows;
+            comp.array = rows;
+            try {
+              if (comp.cells && comp.renderHandler) {
+                for (let i = 0; i < Math.min(6, rows.length); i++) {
+                  if (comp.cells[i]) comp.renderHandler.runWith([comp.cells[i], i]);
+                }
+              }
+            } catch (_) {}
+            if (comp.refresh) comp.refresh();
+            if (comp.scrollTo) comp.scrollTo(0);
+          }
+
+          const topIds = rows.slice(0, 6).map(h => h?.id || h?.heroSimple?.id || 0);
+          const topMatchCount = rows.slice(0, 2).filter(isMatch).length;
+          return {
+            top: topIds,
+            ordered: topMatchCount >= 2 || (rows.length === 1 && topMatchCount === 1) || (rows.length > 0 && isMatch(rows[0])),
+            topMatchCount,
+            totalRows: rows.length
+          };
+        } catch (err) {
+          return { top: [], ordered: false, error: err.message };
+        }
+      }, {
+        targetHeroIds: [...winningHeroIds],
+        targetHeroNames: targetHeroNames || []
+      });
+
+      if (photoOrder.ordered && photoOrder.top && photoOrder.top.length >= 2) break;
+      await page.waitForTimeout(600);
+    }
 
     heroBagTopIds = photoOrder.top || [];
     winnerPhotoOrdered = !!photoOrder.ordered;
