@@ -1,0 +1,163 @@
+{
+  "id": "24e14be4389edcebf36f9478f6b7dd5d66757df7c5512ef3007afdc5c230159b",
+  "account": {
+    "username": "ntdung250222",
+    "password": "ntdcrps7f",
+    "accId": "721941216",
+    "idx": 250222,
+    "phone": "0393122902",
+    "funid": "386749132"
+  },
+  "result": {
+    "sid": "610097",
+    "serverName": "[S97] Bàn Tơ Động-S7",
+    "username": "ntdung250222",
+    "heroes5StarCount": 12,
+    "counts": {
+      "Na Tra": 2,
+      "Đường Tam Tạng": 1
+    },
+    "jackpotTargetHeroId": 3014,
+    "cdkAckedCount": 28,
+    "cdkUnconfirmedCodes": [],
+    "rawV79": {
+      "account": "ntdung250222",
+      "password": "ntdcrps7f",
+      "funtapId": "721941216",
+      "serverId": 610097,
+      "serverName": "Bàn Tơ Động-S7",
+      "heroes5Star": [
+        "Na Tra",
+        "Như Ý Chân Tiên",
+        "Na Tra",
+        "Sa Ngộ Tĩnh",
+        "Cang Kim Tinh Quân",
+        "Tiểu Bạch Long",
+        "Ngân Giác",
+        "Hạc Tiên Nhân",
+        "Ngân Giác",
+        "Đường Tam Tạng",
+        "Như Ý Chân Tiên",
+        "Hạc Tiên Nhân"
+      ]
+    }
+  },
+  "server": {
+    "sid": "610097",
+    "name": "[S97] Bàn Tơ Động-S7",
+    "wsUrl": "wss://wss-funtap-xy.xinliugame.net:9123/",
+    "status": "1"
+  },
+  "status": "DONE",
+  "attempts": 1,
+  "delivery": {
+    "complete": true,
+    "webhookSuccess": true,
+    "messageId": 809,
+    "prepared": {
+      "username": "ntdung250222",
+      "accId": "721941216",
+      "sid": "610097",
+      "serverName": "[S97] Bàn Tơ Động-S7",
+      "roleName": "ntdung250222",
+      "roleUid": "61009744550",
+      "roleLv": 12,
+      "zhandouli": 22437,
+      "zuanshiLeft": 1880,
+      "tutorialCleared": true,
+      "tutorialEvidence": {
+        "explicitGuideNull": false,
+        "stepsCompleted": 0,
+        "lastGuideStepId": 0,
+        "roleLv": 12,
+        "campaignEvidence": {
+          "initialChapterID": 2,
+          "currentChapterID": 3,
+          "wins": 7,
+          "lastState": {
+            "canBattle": 1,
+            "canNextChapter": 0,
+            "needLv": 10,
+            "wait": 0,
+            "finishID": 15
+          }
+        }
+      },
+      "tutorialEvents": {
+        "GC_ROLE_ATTR": 1,
+        "GC_ZZ_HUMAN_INFO": 1,
+        "GC_HERO_LIST": 1,
+        "GC_HERO_CAP_QUERY": 1,
+        "GC_COMBATHERO_LIST": 1,
+        "GC_TIEM_DIGIT": 5,
+        "GC_ITEM_LIST": 1,
+        "GC_SETTING_SYSTEM": 1,
+        "GC_BUBBLE_LOGIN": 1,
+        "GC_YUNYING_LIST": 1,
+        "GC_TASK_LIST": 1,
+        "GC_VIP_INFO": 1,
+        "GC_FIRST_CHARGE_LOGIN": 1,
+        "GC_HERO_SHENMO_OPEN": 1,
+        "GC_HERO_SKIN_OPEN": 1,
+        "GC_LONGHUN_BAG_LIST": 1,
+        "GC_FRIEND_BLACK_QUERY": 1,
+        "GC_CHAT_BAN_LIST": 1,
+        "GC_CHAT_LIST": 2,
+        "GC_CHAT_PRIVATE_LIST": 1,
+        "GC_ENTER_SCENE": 1,
+        "GC_TALK_MAINCITY_CONFIG": 1,
+        "GC_ROLESYSTEM_LIST": 2,
+        "GC_BROADCAST": 6,
+        "GC_CHAT_PAOMA": 1,
+        "GC_BATTLE_HANG_FIGHT": 1,
+        "GC_BATTLE_QUERY": 1,
+        "GC_ITEM_PATH": 4,
+        "GC_ITEM_CHANGE": 1,
+        "GC_GONGMING_LV": 1,
+        "GC_HERO_UP_QUERY": 1,
+        "GC_HERO_ADD": 1,
+        "GC_HERO_DETAIL": 1,
+        "GC_YUNYING_GROUP_UPDATE": 1,
+        "GC_HERO_UP_DO": 1,
+        "GC_ROLE_ZDL_CHANGE": 1
+      },
+      "tutorialNotices": [
+        "Đang hấp thụ Linh Khí, hiện chưa có thưởng để nhận",
+        "Chưa có thưởng",
+        "Xu không đủ",
+        "Xu không đủ",
+        "Xu không đủ",
+        "Xu không đủ"
+      ],
+      "campaignEvidence": {
+        "initialChapterID": 2,
+        "currentChapterID": 3,
+        "wins": 7,
+        "lastState": {
+          "canBattle": 1,
+          "canNextChapter": 0,
+          "needLv": 10,
+          "wait": 0,
+          "finishID": 15
+        }
+      },
+      "heroBagTopIds": [
+        3014,
+        3014,
+        1012,
+        3009,
+        1003,
+        3010
+      ],
+      "winnerPhotoOrdered": true,
+      "stepsCompleted": 0,
+      "phase1Sec": 1.51,
+      "phase2Sec": 9.18,
+      "totalSec": 11.17,
+      "mainShotPath": "/Users/dunn/Downloads/Test AHTL/repo_truongqv12/jackpot_screenshots/S97_ntdung250222_ManHinhChinh.png",
+      "heroShotPath": "/Users/dunn/Downloads/Test AHTL/repo_truongqv12/jackpot_screenshots/S97_ntdung250222_TuiTuong.png"
+    }
+  },
+  "createdAt": "2026-10-27T09:00:42.345Z",
+  "finishedAt": "2026-10-27T11:38:56.111Z"
+}

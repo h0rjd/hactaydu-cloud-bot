@@ -10,3 +10,5 @@ state/*
 !state/.gitkeep
 !state/progress.json
 !state/live-settings.json
+!state/followup-jobs/
+!state/followup-jobs/*.json
