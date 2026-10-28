@@ -663,5 +663,16 @@
     "lockedAt": "2026-10-28T03:50:21.789Z",
     "serverId": "610100",
     "serverName": "[S100] Bàn Tơ Động-S10"
+  },
+  {
+    "idx": 245722,
+    "username": "ntdung245722",
+    "password": "dgdsef3z",
+    "accId": "722025474",
+    "phone": "0376382946",
+    "funid": "386757826",
+    "lockedAt": "2026-10-28T05:01:57.065Z",
+    "serverId": "610101",
+    "serverName": "[S101] Sư Đà Lĩnh-S1"
   }
 ]
