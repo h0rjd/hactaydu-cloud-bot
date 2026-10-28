@@ -49,7 +49,7 @@ jobs:
         env:
           MACHINE_NAME: ${{ contains(github.repository, 'dungby4') && 'D4' || 'H0' }}
           ACCOUNTS_PATH: accounts.json
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || '8711883902:AAGeVLrl9QI_BnZIzuLF9lD7kq8ryOTllrY' }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID || '7182418544' }}
           SALES_BOT_WEBHOOK_URL: 'https://152-69-209-107.sslip.io/api/v1/inventory/hactaydu-webhook'
           SALES_BOT_SECRET: 'd57be08c4bbbc9c7feda86285611ee41fc8016d4f1bf4a1a7a60502d123b0ab3'
