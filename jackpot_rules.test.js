@@ -9,6 +9,10 @@ test('x2 plus an additional non-gifted core qualifies as a combo',()=>{
 test('three distinct non-target singles never qualify',()=>{
  assert.equal(evaluateJackpot({'Dương Tiễn':1,'Na Tra':1,'Hoàng My':1,'Cang Kim Tinh Quân':1}).isJackpotAlert,false);
 });
+test('1 Ton Ngo Khong plus 1 Duong Tam Tang qualifies as jackpot',()=>{
+ assert.equal(evaluateJackpot({'Tôn Ngộ Không':1,'Đường Tam Tạng':1}).isJackpotAlert,true);
+ assert.equal(evaluateJackpot({'Tôn Ngộ Không':1,'Na Tra':1}).isJackpotAlert,false);
+});
 test('only the one gifted Cang Kim is excluded',()=>{
  const gift=evaluateJackpot({'Cang Kim Tinh Quân':1});
  assert.equal(gift.isJackpotAlert,false);assert.equal(gift.total,0);

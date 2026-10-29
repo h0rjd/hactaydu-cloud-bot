@@ -12,7 +12,10 @@ async function prepareAndNotify(account,result,{signal,verifiedServer,replaceMes
  const {prepareAndScreenshotJackpotAccount}=require('../prepare_jackpot_account');
  const srv=verifiedServer||await require('./adapters/reroll').server(result.sid);
  if(String(srv.sid)!==String(result.sid)||!/^wss:\/\//.test(srv.wsUrl))throw Error('Invalid server for jackpot preparation');
- const winningNames=Object.entries(result.counts||{}).filter(([,n])=>n>=2).map(([name])=>name);
+ let winningNames=Object.entries(result.counts||{}).filter(([,n])=>n>=2).map(([name])=>name);
+ if(winningNames.length===0 && (result.counts?.['Tôn Ngộ Không']||0)>=1 && (result.counts?.['Đường Tam Tạng']||0)>=1){
+  winningNames=['Tôn Ngộ Không','Đường Tam Tạng'];
+ }
  const recoveryMode=recoverSkippedCampaign||!!(result.rawV79&&result.rawV79.guideSkipSent!==false);
  const targetHeroName=winningNames[0]||'';
  const params={username:account.username,password:account.password,accId:String(account.accId),sid:String(result.sid),serverName:result.serverName,wsUrl:srv.wsUrl,targetHeroId:result.jackpotTargetHeroId||0,targetHeroName,targetHeroNames:winningNames,resumeGuideStepId:result.rawV79?.guideState?.gid||null,recoverSkippedCampaign:recoveryMode,minimumPhotoLevel:8,logger:require('./private_logger').privateLogger(quietLogPath||path.join(__dirname,'../state/tutorial-logs',`${result.sid}-${account.accId}.log`))};
