@@ -338,6 +338,24 @@ function matchTargetHero(id, rawName, rawName2) {
   ) {
     return 'Trấn Nguyên Tử';
   }
+  if (
+    norm.includes('ly tinh') ||
+    norm.includes('thac thap thien vuong') ||
+    combinedRaw.includes('李靖') ||
+    combinedRaw.includes('托塔天王')
+  ) {
+    return 'Lý Tịnh';
+  }
+  if (
+    norm.includes('tru bat gioi') ||
+    norm.includes('bat gioi') ||
+    norm.includes('tru ngo nang') ||
+    combinedRaw.includes('猪八戒') ||
+    combinedRaw.includes('猪悟能') ||
+    combinedRaw.includes('八戒')
+  ) {
+    return 'Trư Bát Giới';
+  }
   return null;
 }
 
@@ -769,7 +787,9 @@ async function runAccountSession(acc, srv, options = {}) {
     'Đường Tam Tạng': 0,
     'Hồng Hài Nhi': 0,
     'Trấn Nguyên Tử': 0,
-    'Cang Kim Tinh Quân': 0
+    'Cang Kim Tinh Quân': 0,
+    'Lý Tịnh': 0,
+    'Trư Bát Giới': 0
   };
 
   for (const h of heroMap.values()) {
@@ -817,7 +837,8 @@ async function runAccountSession(acc, srv, options = {}) {
   const totalCores = jackpotRules.total;
   const {isSameHeroX2X3,isCoreX2Plus1,isMultiTamThanh3,isJackpotAlert} = jackpotRules;
   const isMultiTamThanh = totalTamThanh >= 2;
-  const jackpotTargetHeroId = heroes5Star.find(h => (jackpotRules.counts[h.coreTag] || 0) >= 2)?.id;
+  const jackpotTargetHeroId = heroes5Star.find(h => (jackpotRules.counts[h.coreTag] || 0) >= 2)?.id ||
+                              heroes5Star.find(h => ['Đường Tam Tạng', 'Trư Bát Giới', 'Tôn Ngộ Không', 'Lý Tịnh'].includes(h.coreTag))?.id || 0;
 
   // ONLY claim Tiên Ngọc from Achievements / Đồ Giám / Duyên Phận if this account hit X2/X3 or >= 2 Tam Thánh (e.g. Ngộ Không + Dương Tiễn)!
   if (isJackpotAlert || totalTamThanh >= 2) {
