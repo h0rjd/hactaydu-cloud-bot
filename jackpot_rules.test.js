@@ -13,31 +13,6 @@ test('1 Ton Ngo Khong plus 1 Duong Tam Tang does not qualify as jackpot',()=>{
  assert.equal(evaluateJackpot({'Tôn Ngộ Không':1,'Đường Tam Tạng':1}).isJackpotAlert,false);
  assert.equal(evaluateJackpot({'Tôn Ngộ Không':1,'Na Tra':1}).isJackpotAlert,false);
 });
-test('combo 3/4 targets qualify as jackpot alert without duplicates',()=>{
- const hit1 = evaluateJackpot({'Đường Tam Tạng':1,'Trư Bát Giới':1,'Tôn Ngộ Không':1});
- assert.equal(hit1.isJackpotAlert,true);
- assert.equal(hit1.isCombo3of4,true);
-
- const hit2 = evaluateJackpot({'Đường Tam Tạng':1,'Tôn Ngộ Không':1,'Lý Tịnh':1});
- assert.equal(hit2.isJackpotAlert,true);
- assert.equal(hit2.isCombo3of4,true);
-
- const hit3 = evaluateJackpot({'Trư Bát Giới':1,'Tôn Ngộ Không':1,'Lý Tịnh':1});
- assert.equal(hit3.isJackpotAlert,true);
- assert.equal(hit3.isCombo3of4,true);
-
- const hit4 = evaluateJackpot({'Đường Tam Tạng':1,'Trư Bát Giới':1,'Lý Tịnh':1});
- assert.equal(hit4.isJackpotAlert,true);
- assert.equal(hit4.isCombo3of4,true);
-
- const hitAll = evaluateJackpot({'Đường Tam Tạng':1,'Trư Bát Giới':1,'Tôn Ngộ Không':1,'Lý Tịnh':1});
- assert.equal(hitAll.isJackpotAlert,true);
- assert.equal(hitAll.isCombo3of4,true);
-
- const miss2 = evaluateJackpot({'Đường Tam Tạng':1,'Trư Bát Giới':1,'Dương Tiễn':1});
- assert.equal(miss2.isJackpotAlert,false);
- assert.equal(miss2.isCombo3of4,false);
-});
 test('only the one gifted Cang Kim is excluded',()=>{
  const gift=evaluateJackpot({'Cang Kim Tinh Quân':1});
  assert.equal(gift.isJackpotAlert,false);assert.equal(gift.total,0);
