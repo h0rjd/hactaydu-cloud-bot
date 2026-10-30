@@ -2731,5 +2731,16 @@
     "lockedAt": "2026-10-29T21:57:21.167Z",
     "serverId": "610107",
     "serverName": "[S107] Sư Đà Lĩnh-S7"
+  },
+  {
+    "idx": 245512,
+    "username": "ntdung245512",
+    "password": "dbyt7eerw",
+    "accId": "721983158",
+    "phone": "0393079696",
+    "funid": "386753537",
+    "lockedAt": "2026-10-30T03:03:00.981Z",
+    "serverId": "610108",
+    "serverName": "[S108] Sư Đà Lĩnh-S8"
   }
 ]
