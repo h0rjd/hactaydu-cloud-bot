@@ -716,6 +716,8 @@ async function prepareAndScreenshotJackpotAccount({
   const mainShotPath = `${WORKSPACE}/jackpot_screenshots/S${displaySNum}_${username}_ManHinhChinh.png`;
   const heroShotPath = `${WORKSPACE}/jackpot_screenshots/S${displaySNum}_${username}_TuiTuong.png`;
   fs.mkdirSync(`${WORKSPACE}/jackpot_screenshots`, { recursive: true });
+  if (fs.existsSync(heroShotPath)) { try { fs.unlinkSync(heroShotPath); } catch (_) {} }
+  if (fs.existsSync(mainShotPath)) { try { fs.unlinkSync(mainShotPath); } catch (_) {} }
   let browser = null;
   try {
     if (!chromium) {
@@ -750,8 +752,8 @@ async function prepareAndScreenshotJackpotAccount({
       });
     }
     const context = await browser.newContext({
-      viewport: { width: 450, height: 800 },
-      deviceScaleFactor: 2
+      viewport: { width: 540, height: 960 },
+      deviceScaleFactor: 1
     });
     const page = await context.newPage();
 
@@ -800,7 +802,7 @@ async function prepareAndScreenshotJackpotAccount({
       let code = await resp.text();
       code = code.replace(
         'window["PlatformManager"]=Ip;',
-        'window["PlatformManager"]=Ip;try{Object.assign(window,{p:p,n:n,zi:n,NetMsg:n,Ri:Ri,bh:bh,bt:bt,si:si,ye:ye,Xa:Xa,gb:gb,fb:fb,at:at,uh:uh,H:H,P0:P0,Ge:Ge,kn:kn});window.__tutorialAudit={explicitNull:false,steps:[]};const original=P0.GC_GUIDE_STEP;P0.GC_GUIDE_STEP=function(step){if(step&&step.id){window.__tutorialAudit.steps.push(step.id)}else{window.__tutorialAudit.explicitNull=true}return original.apply(this,arguments)};}catch(e){}'
+        'window["PlatformManager"]=Ip;try{Object.assign(window,{p:p,n:n,zi:n,NetMsg:n,Ri:Ri,bh:bh,bt:bt,si:si,ye:ye,Xa:Xa,gb:gb,fb:fb,at:at,uh:uh,H:H,P0:P0,Ge:Ge,kn:kn,tt:tt,be:be,_t:_t,De:De});window.__tutorialAudit={explicitNull:false,steps:[]};const original=P0.GC_GUIDE_STEP;P0.GC_GUIDE_STEP=function(step){if(step&&step.id){window.__tutorialAudit.steps.push(step.id)}else{window.__tutorialAudit.explicitNull=true}return original.apply(this,arguments)};}catch(e){}'
       );
       await route.fulfill({
         status: 200,
@@ -939,164 +941,185 @@ async function prepareAndScreenshotJackpotAccount({
       console.warn(`⚠️ [${username}] Không thể chụp Màn hình chính:`, shotErr.message);
     }
 
-    // 2. Tắt sạch mọi hướng dẫn tân thủ, popup, hộp thoại che màn hình
+    // 2. Tắt sạch mọi hướng dẫn tân thủ, popup, hộp thoại che màn hình & vô hiệu hóa Guide popup
     await page.evaluate(() => {
       try {
         if (window.uh && uh.getInstance && uh.getInstance().inStage && uh.getInstance().inStage()) {
           uh.getInstance().close();
         }
         if (window.at) {
-          at.data = null;
-          if (at.guide && at.guide.close) at.guide.close();
+          if (window.at.guide && window.at.guide.close) window.at.guide.close();
+          window.at.data = null;
+          window.at.show = function() {};
+          window.at.check = function() { return false; };
         }
-        if (window.Ri && Ri.getInstance) {
+        if (window.Ri && Ri.getInstance && Ri.getInstance().setGuideMode) {
           Ri.getInstance().setGuideMode(false);
+        }
+        if (window.De) window.De.isInCombat = false;
+        if (window._t && typeof window._t.hasCombat === 'function' && window._t.hasCombat()) {
+          try { if (window._t.endCombat) window._t.endCombat(); } catch (_) {}
         }
       } catch (_) {}
     });
 
-    // 3. Mở Túi Thần Tướng một cách chắc chắn 100%:
-    // - Đăng ký panel Thần Tướng vào bottom menu bt
-    // - Kích hoạt mở panel và click tab Thần Tướng (tọa độ x=115, y=770)
-    // - Retry lên tới 8 lần (mỗi lần 1.5s) kèm kiểm tra chặt chẽ isHeroBagOpen
-    let heroBagReady = false;
-    for (let attempt = 1; attempt <= 8; attempt++) {
-      await page.evaluate(({ targetNames, targetIds }) => {
-        try {
-          const isTarget = (h) => {
-            if (!h) return false;
-            const hid = Number(h.id || h.heroId || h.heroSimple?.id || 0);
-            if (targetIds.includes(hid)) return true;
-            const str = (String(h.name || '') + ' ' + String(h.heroSimple?.name || '') + ' ' + String(h.heroName || '') + ' ' + String(h.name_cn || '')).toLowerCase();
-            for (const tn of targetNames) {
-              if (tn && (str.includes(tn) || tn.includes(str))) return true;
-            }
-            return false;
-          };
-          const sortFn = (a, b) => {
-            const aT = isTarget(a), bT = isTarget(b);
-            if (aT && !bT) return -1;
-            if (!aT && bT) return 1;
-            return (b.star || 0) - (a.star || 0) || (b.lv || 0) - (a.lv || 0);
-          };
-          if (window.kn) window.kn.combatheroSort = sortFn;
-          if (window.tt) window.tt.combatheroSort = sortFn;
-        } catch (_) {}
-
-        try {
-          if (window.bt && bt.getInstance) {
-            const mb = bt.getInstance();
-            if (window.ye && !mb.index2Panel[0]) mb.register(0, ye.getInstance());
-            if (window.si) mb.register(1, si.getInstance());
-            if (mb.selectedIndex === 1) mb.selectedIndex = -1;
-            mb.onTab(1);
-          }
-        } catch (_) {}
-
-        try {
-          if (window.si && si.getInstance) {
-            const s = si.getInstance();
-            s.open(0);
-            if (typeof s.reflushHero === 'function') s.reflushHero();
-            if (typeof s.setList === 'function') s.setList(0, 0);
-          }
-        } catch (_) {}
-      }, {
-        targetNames: (targetHeroNames || []).map(s => String(s || '').toLowerCase().trim()),
-        targetIds: [...winningHeroIds]
-      });
-
+    // 3. Chuẩn bị hàm sắp xếp tướng nòng cốt vào combatheroSort TRƯỚC KHI mở túi
+    await page.evaluate(({ targetNames, targetIds }) => {
       try {
-        await page.mouse.click(115, 770);
+        const normNames = (targetNames || []).map(n => String(n || "").toLowerCase().trim());
+        const idSet = new Set((targetIds || []).map(Number).filter(x => x > 0));
+
+        const isMatch = (h) => {
+          if (!h) return false;
+          const hid = Number(h.id || h.heroId || h.heroSimple?.id || h.cfgId || 0);
+          if (hid > 0 && idSet.has(hid)) return true;
+          const raw = (String(h.name || "") + " " + String(h.heroSimple?.name || "") + " " + String(h.heroName || "") + " " + String(h.name_cn || "")).toLowerCase();
+          for (const t of normNames) {
+            if (!t) continue;
+            if (raw.includes(t) || t.includes(raw)) return true;
+            if (t.includes("ngọc diện") && (raw.includes("ngoc dien") || raw.includes("ngọc diện") || raw.includes("玉面") || hid === 4008 || hid === 2013)) return true;
+            if (t.includes("trấn nguyên") && (raw.includes("tran nguyen") || raw.includes("trấn nguyên") || raw.includes("镇元") || hid === 1014 || hid === 3012)) return true;
+            if (t.includes("lý tịnh") && (raw.includes("ly tinh") || raw.includes("lý tịnh") || raw.includes("李靖") || raw.includes("托塔") || hid === 1010)) return true;
+            if (t.includes("ngưu ma") && (raw.includes("nguu ma") || raw.includes("ngưu ma") || raw.includes("牛魔") || hid === 2006)) return true;
+            if (t.includes("thiết phiến") && (raw.includes("thiet phien") || raw.includes("thiết phiến") || raw.includes("铁扇") || hid === 2009 || hid === 2007)) return true;
+            if (t.includes("hồng hài") && (raw.includes("hong hai") || raw.includes("hồng hài") || raw.includes("红孩") || hid === 1012 || hid === 2012)) return true;
+            if (t.includes("hàng long") && (raw.includes("hang long") || raw.includes("hàng long") || raw.includes("降龙") || hid === 3006)) return true;
+            if (t.includes("hằng nga") && (raw.includes("hang nga") || raw.includes("hằng nga") || raw.includes("嫦娥") || hid === 2007 || hid === 1007)) return true;
+            if (t.includes("hoàng my") && (raw.includes("hoang my") || raw.includes("hoàng my") || raw.includes("黄眉") || hid === 3004)) return true;
+            if (t.includes("bát giới") && (raw.includes("bat gioi") || raw.includes("bát giới") || raw.includes("八戒") || hid === 2010)) return true;
+            if (t.includes("ngộ không") && (raw.includes("ngo khong") || raw.includes("ngộ không") || raw.includes("孙悟空") || hid === 3011 || hid === 2014)) return true;
+            if (t.includes("dương tiễn") && (raw.includes("duong tien") || raw.includes("dương tiễn") || raw.includes("杨戬") || hid === 3009 || hid === 1014)) return true;
+            if (t.includes("na tra") && (raw.includes("na tra") || raw.includes("哪吒") || hid === 3003 || hid === 3014)) return true;
+            if (t.includes("đường") && (raw.includes("duong tam tang") || raw.includes("đường tam tạng") || raw.includes("đường tăng") || raw.includes("唐僧") || hid === 1003 || hid === 3010)) return true;
+            if (t.includes("cang kim") && (raw.includes("cang kim") || raw.includes("亢金") || hid === 4003 || hid === 2015)) return true;
+            if (t.includes("bạch cốt") && (raw.includes("bach cot") || raw.includes("bạch cốt") || raw.includes("白骨") || hid === 1011)) return true;
+          }
+          return false;
+        };
+
+        const sortFn = (a, b) => {
+          const aT = isMatch(a), bT = isMatch(b);
+          if (aT && !bT) return -1;
+          if (!aT && bT) return 1;
+          return (b.star || 0) - (a.star || 0) || (b.lv || 0) - (a.lv || 0);
+        };
+        if (window.kn) window.kn.combatheroSort = sortFn;
+        if (window.tt) window.tt.combatheroSort = sortFn;
       } catch (_) {}
 
-      await page.waitForTimeout(1500);
+      // Mở Túi Thần Tướng qua menu bt.getInstance().onTab(1) hoặc si.getInstance().open(0) DUY NHẤT 1 LẦN
+      try {
+        const mb = window.bt?.getInstance?.();
+        const heroPanel = window.si?.getInstance?.();
+        if (mb) {
+          if (heroPanel && !mb.index2Panel[1]) mb.register(1, heroPanel);
+          mb.onTab(1);
+        } else if (heroPanel) {
+          heroPanel.open(0);
+        }
+      } catch (_) {}
+    }, {
+      targetNames: (targetHeroNames || []).map(s => String(s || "").toLowerCase().trim()),
+      targetIds: [...winningHeroIds]
+    });
 
-      heroBagReady = await page.evaluate(() => {
+    // 4. Chờ LayaAir tải bất đồng bộ Scene & Atlas của Túi Thần Tướng (Tối đa 35 giây)
+    let heroBagReady = false;
+    try {
+      await page.waitForFunction(() => {
         try {
-          const s = window.si?.getInstance();
+          const s = window.si?.getInstance?.();
           if (!s) return false;
-          const stageOk = (typeof s.inStage === 'function' && s.inStage()) || (s.ui && (s.ui.inStage ? s.ui.inStage() : !!s.ui.parent));
-          const list = s.ui?.cardList?.list;
+          const inStage = typeof s.inStage === "function" ? s.inStage() : !!(s.ui && s.ui.parent);
+          if (!inStage || !s.ui) return false;
+          const list = s.ui.cardList?.list;
           const rows = list?.dataSource || list?.array;
-          return !!(stageOk && list && Array.isArray(rows) && rows.length > 0);
+          return Array.isArray(rows) && rows.length > 0;
         } catch (_) { return false; }
-      });
-
-      if (heroBagReady) {
-        console.log(`✅ [${username}] Đã mở và nạp danh sách Túi Thần Tướng thành công (Lần ${attempt})!`);
-        break;
-      }
-      console.log(`⏳ [${username}] Đang mở Túi Thần Tướng... (Thử lần ${attempt}/8)`);
+      }, { timeout: 35000, polling: 500 });
+      heroBagReady = true;
+      console.log(`✅ [${username}] Túi Thần Tướng đã tải và hiển thị thành công!`);
+    } catch (waitErr) {
+      console.warn(`⚠️ [${username}] Chờ mở túi thần tướng quá 35s, thử kích hoạt lại fallback...`);
     }
 
     if (!heroBagReady) {
-      console.warn(`⚠️ [${username}] Chưa thấy cardList sau 8 lần, kích hoạt fallback cưỡng bức mount Laya.stage...`);
       await page.evaluate(() => {
         try {
-          const s = window.si?.getInstance();
-          if (s) {
-            s.open(0);
-            if (s.ui && window.Laya?.stage && !s.ui.parent) {
-              window.Laya.stage.addChild(s.ui);
-            }
-            if (typeof s.reflushHero === 'function') s.reflushHero();
-          }
+          const s = window.si?.getInstance?.();
+          if (s) s.open(0);
         } catch (_) {}
       });
-      await page.waitForTimeout(3000);
+      try { await page.mouse.click(115, 770); } catch (_) {}
+      try {
+        await page.waitForFunction(() => {
+          try {
+            const s = window.si?.getInstance?.();
+            if (!s) return false;
+            const inStage = typeof s.inStage === "function" ? s.inStage() : !!(s.ui && s.ui.parent);
+            if (!inStage || !s.ui) return false;
+            const list = s.ui.cardList?.list;
+            const rows = list?.dataSource || list?.array;
+            return Array.isArray(rows) && rows.length > 0;
+          } catch (_) { return false; }
+        }, { timeout: 15000, polling: 500 });
+        heroBagReady = true;
+      } catch (_) {}
     }
 
-    // Chờ tối đa 8s để danh sách thẻ tướng trong Túi Thần Tướng tải hoàn tất
-    for (let w = 0; w < 16; w++) {
-      const hasListData = await page.evaluate(() => {
-        try {
-          const comp = window.si?.getInstance()?.ui?.cardList?.list;
-          const rows = comp?.dataSource || comp?.array;
-          return Array.isArray(rows) && rows.length > 0;
-        } catch (_) { return false; }
-      });
-      if (hasListData) break;
-      await page.waitForTimeout(500);
-    }
-
-    // Tự động sắp xếp 2 hoặc 3 tướng jackpot đứng kề nhau ngay hàng đầu (Slot 1 & Slot 2)
     let photoOrder = { top: [], ordered: false, topMatchCount: 0, totalRows: 0 };
-    for (let bagTry = 0; bagTry < 15; bagTry++) {
+    if (heroBagReady) {
       photoOrder = await page.evaluate(({ targetHeroIds, targetHeroNames }) => {
         try {
-          const normNames = (targetHeroNames || []).map(n => String(n || '').toLowerCase().trim());
+          const s = window.si?.getInstance?.();
+          if (!s || !s.ui) return { top: [], ordered: false };
+
+          // Đảm bảo subtab là Thần Tướng (index 0)
+          try {
+            if (s.ui?.btnTab && s.ui.btnTab.selectedIndex !== 0) {
+              s.ui.btnTab.selectedIndex = 0;
+              if (typeof s.onTab === 'function') s.onTab(0);
+            }
+          } catch (_) {}
+
+          // Hiển thị thanh Header Ge và Footer Menu bt (chuẩn 100% giao diện ảnh mẫu Attachment 3)
+          try {
+            if (window.Ge?.getInstance) window.Ge.getInstance().show(s);
+            if (window.bt?.getInstance) window.bt.getInstance().show(window.bt.HERO || 1, s);
+          } catch (_) {}
+
+          const normNames = (targetHeroNames || []).map(n => String(n || "").toLowerCase().trim());
           const idSet = new Set((targetHeroIds || []).map(Number).filter(x => x > 0));
 
           const isMatch = (h) => {
             if (!h) return false;
             const hid = Number(h.id || h.heroId || h.heroSimple?.id || h.cfgId || 0);
             if (hid > 0 && idSet.has(hid)) return true;
-            const raw = (String(h.name || '') + ' ' + String(h.heroSimple?.name || '') + ' ' + String(h.heroName || '') + ' ' + String(h.name_cn || '')).toLowerCase();
+            const raw = (String(h.name || "") + " " + String(h.heroSimple?.name || "") + " " + String(h.heroName || "") + " " + String(h.name_cn || "")).toLowerCase();
             for (const t of normNames) {
               if (!t) continue;
               if (raw.includes(t) || t.includes(raw)) return true;
-              if (t.includes('ngọc diện') && (raw.includes('ngoc dien') || raw.includes('ngọc diện') || raw.includes('玉面') || hid === 4008 || hid === 2013)) return true;
-              if (t.includes('trấn nguyên') && (raw.includes('tran nguyen') || raw.includes('trấn nguyên') || raw.includes('镇元') || hid === 1014 || hid === 3012)) return true;
-              if (t.includes('lý tịnh') && (raw.includes('ly tinh') || raw.includes('lý tịnh') || raw.includes('李靖') || raw.includes('托塔') || hid === 1010)) return true;
-              if (t.includes('ngưu ma') && (raw.includes('nguu ma') || raw.includes('ngưu ma') || raw.includes('牛魔') || hid === 2006)) return true;
-              if (t.includes('thiết phiến') && (raw.includes('thiet phien') || raw.includes('thiết phiến') || raw.includes('铁扇') || hid === 2009 || hid === 2007)) return true;
-              if (t.includes('hồng hài') && (raw.includes('hong hai') || raw.includes('hồng hài') || raw.includes('红孩') || hid === 1012 || hid === 2012)) return true;
-              if (t.includes('hàng long') && (raw.includes('hang long') || raw.includes('hàng long') || raw.includes('降龙') || hid === 3006)) return true;
-              if (t.includes('hằng nga') && (raw.includes('hang nga') || raw.includes('hằng nga') || raw.includes('嫦娥') || hid === 2007 || hid === 1007)) return true;
-              if (t.includes('hoàng my') && (raw.includes('hoang my') || raw.includes('hoàng my') || raw.includes('黄眉') || hid === 3004)) return true;
-              if (t.includes('bát giới') && (raw.includes('bat gioi') || raw.includes('bát giới') || raw.includes('八戒') || hid === 2010)) return true;
-              if (t.includes('ngộ không') && (raw.includes('ngo khong') || raw.includes('ngộ không') || raw.includes('孙悟空') || hid === 3011 || hid === 2014)) return true;
-              if (t.includes('dương tiễn') && (raw.includes('duong tien') || raw.includes('dương tiễn') || raw.includes('杨戬') || hid === 3009 || hid === 1014)) return true;
-              if (t.includes('na tra') && (raw.includes('na tra') || raw.includes('哪吒') || hid === 3003 || hid === 3014)) return true;
-              if (t.includes('đường') && (raw.includes('duong tam tang') || raw.includes('đường tam tạng') || raw.includes('đường tăng') || raw.includes('唐僧') || hid === 1003 || hid === 3010)) return true;
-              if (t.includes('cang kim') && (raw.includes('cang kim') || raw.includes('亢金') || hid === 4003 || hid === 2015)) return true;
-              if (t.includes('bạch cốt') && (raw.includes('bach cot') || raw.includes('bạch cốt') || raw.includes('白骨') || hid === 1011)) return true;
+              if (t.includes("ngọc diện") && (raw.includes("ngoc dien") || raw.includes("ngọc diện") || raw.includes("玉面") || hid === 4008 || hid === 2013)) return true;
+              if (t.includes("trấn nguyên") && (raw.includes("tran nguyen") || raw.includes("trấn nguyên") || raw.includes("镇元") || hid === 1014 || hid === 3012)) return true;
+              if (t.includes("lý tịnh") && (raw.includes("ly tinh") || raw.includes("lý tịnh") || raw.includes("李靖") || raw.includes("托塔") || hid === 1010)) return true;
+              if (t.includes("ngưu ma") && (raw.includes("nguu ma") || raw.includes("ngưu ma") || raw.includes("牛魔") || hid === 2006)) return true;
+              if (t.includes("thiết phiến") && (raw.includes("thiet phien") || raw.includes("thiết phiến") || raw.includes("铁扇") || hid === 2009 || hid === 2007)) return true;
+              if (t.includes("hồng hài") && (raw.includes("hong hai") || raw.includes("hồng hài") || raw.includes("红孩") || hid === 1012 || hid === 2012)) return true;
+              if (t.includes("hàng long") && (raw.includes("hang long") || raw.includes("hàng long") || raw.includes("降龙") || hid === 3006)) return true;
+              if (t.includes("hằng nga") && (raw.includes("hang nga") || raw.includes("hằng nga") || raw.includes("嫦娥") || hid === 2007 || hid === 1007)) return true;
+              if (t.includes("hoàng my") && (raw.includes("hoang my") || raw.includes("hoàng my") || raw.includes("黄眉") || hid === 3004)) return true;
+              if (t.includes("bát giới") && (raw.includes("bat gioi") || raw.includes("bát giới") || raw.includes("八戒") || hid === 2010)) return true;
+              if (t.includes("ngộ không") && (raw.includes("ngo khong") || raw.includes("ngộ không") || raw.includes("孙悟空") || hid === 3011 || hid === 2014)) return true;
+              if (t.includes("dương tiễn") && (raw.includes("duong tien") || raw.includes("dương tiễn") || raw.includes("杨戬") || hid === 3009 || hid === 1014)) return true;
+              if (t.includes("na tra") && (raw.includes("na tra") || raw.includes("哪吒") || hid === 3003 || hid === 3014)) return true;
+              if (t.includes("đường") && (raw.includes("duong tam tang") || raw.includes("đường tam tạng") || raw.includes("đường tăng") || raw.includes("唐僧") || hid === 1003 || hid === 3010)) return true;
+              if (t.includes("cang kim") && (raw.includes("cang kim") || raw.includes("亢金") || hid === 4003 || hid === 2015)) return true;
+              if (t.includes("bạch cốt") && (raw.includes("bach cot") || raw.includes("bạch cốt") || raw.includes("白骨") || hid === 1011)) return true;
             }
             return false;
           };
 
-          const comp = window.si?.getInstance()?.ui?.cardList?.list;
+          const comp = s.ui?.cardList?.list;
           let rows = comp?.dataSource || comp?.array;
           if (!Array.isArray(rows) || !rows.length) {
             if (window.tt?.heros && Array.isArray(window.tt.heros)) rows = window.tt.heros;
@@ -1144,35 +1167,37 @@ async function prepareAndScreenshotJackpotAccount({
         targetHeroIds: [...winningHeroIds],
         targetHeroNames: targetHeroNames || []
       });
-
-      if (photoOrder.ordered && photoOrder.top && photoOrder.top.length >= 2) break;
-      await page.waitForTimeout(600);
     }
 
     heroBagTopIds = photoOrder.top || [];
     winnerPhotoOrdered = !!photoOrder.ordered;
-    if (!winnerPhotoOrdered) {
-      console.warn(`⚠️ [${username}] Sắp xếp tướng jackpot chưa hoàn hảo (topMatch=${photoOrder.topMatchCount}/${photoOrder.totalRows}), vẫn chụp ảnh và tiếp tục gửi bot.`);
-      winnerPhotoOrdered = true;
-    }
 
-    // Chờ 7.5s (buffer VPS mạng quốc tế) để danh sách thẻ tướng 5 sao hiển thị rõ ràng, avatar đầy đủ trước khi chụp
-    await page.waitForTimeout(7500);
+    // Chờ 5 giây (settle wait) để canvas nạp toàn bộ ảnh thẻ tướng, viền và sao hoàn chỉnh
+    await page.waitForTimeout(5000);
 
-    const finalBagCheck = await page.evaluate(() => {
+    // 5. Kiểm tra nghiêm ngặt: CHỈ CHỤP KHI ĐÃ ĐẢM BẢO 100% Ở TÚI THẦN TƯỚNG
+    const isTrulyInHeroBag = await page.evaluate(() => {
       try {
-        const s = window.si?.getInstance();
-        return !!(s && (s.inStage?.() || s.ui?.parent) && s.ui?.cardList?.list);
+        const s = window.si?.getInstance?.();
+        if (!s) return false;
+        const inStage = typeof s.inStage === "function" ? s.inStage() : !!(s.ui && s.ui.parent);
+        const list = s.ui?.cardList?.list;
+        const rows = list?.dataSource || list?.array;
+        const mb = window.bt?.getInstance?.();
+        const isTabHero = mb ? (mb.selectedIndex === 1) : true;
+        return !!(inStage && s.visible !== false && s.ui && s.ui.visible !== false && list && Array.isArray(rows) && rows.length > 0 && isTabHero);
       } catch (_) { return false; }
     });
-    if (!finalBagCheck) {
-      console.warn(`⚠️ [${username}] UI có dấu hiệu chưa hiển thị Túi Thần Tướng, thử ấn tab Thần Tướng trước khi chụp...`);
-      await page.mouse.click(115, 770);
-      await page.waitForTimeout(4000);
-    }
 
-    await page.screenshot({ path: heroShotPath });
-    console.log(`📸 [${username}] Đã chụp Túi Thần Tướng -> ${heroShotPath}`);
+    if (isTrulyInHeroBag) {
+      await page.screenshot({ path: heroShotPath });
+      console.log(`📸 [${username}] ĐÃ CHỤP TÚI THẦN TƯỚNG THÀNH CÔNG (Chuẩn 100% layout ảnh mẫu) -> ${heroShotPath}`);
+    } else {
+      console.error(`❌ [${username}] KHÔNG THỂ XÁC NHẬN TÚI THẦN TƯỚNG! HỦY CHỤP ĐỂ TRÁNH GỬI ẢNH SAI/THÀNH CHÍNH!`);
+      if (fs.existsSync(heroShotPath)) {
+        try { fs.unlinkSync(heroShotPath); } catch (_) {}
+      }
+    }
   } catch (err) {
     console.warn(`⚠️ [${username}] Chuẩn bị tân thủ/ảnh chưa hoàn tất:`, err.message);
   } finally {
