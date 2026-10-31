@@ -3963,5 +3963,16 @@
     "lockedAt": "2026-10-31T02:53:06.546Z",
     "serverId": "610110",
     "serverName": "[S110] Sư Đà Lĩnh-S10"
+  },
+  {
+    "idx": 245553,
+    "username": "ntdung245553",
+    "password": "dbyysm385",
+    "accId": "721992958",
+    "phone": "0978999935",
+    "funid": "386754540",
+    "lockedAt": "2026-10-31T03:04:27.033Z",
+    "serverId": "610111",
+    "serverName": "[S111] Quảng Hàn Cung-S1"
   }
 ]
