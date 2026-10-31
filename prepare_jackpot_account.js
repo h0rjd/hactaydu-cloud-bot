@@ -800,7 +800,7 @@ async function prepareAndScreenshotJackpotAccount({
       let code = await resp.text();
       code = code.replace(
         'window["PlatformManager"]=Ip;',
-        'window["PlatformManager"]=Ip;try{Object.assign(window,{p:p,n:n,zi:n,NetMsg:n,Ri:Ri,bh:bh,bt:bt,si:si,ye:ye,Xa:Xa,gb:gb,fb:fb,at:at,uh:uh,H:H,P0:P0});window.__tutorialAudit={explicitNull:false,steps:[]};const original=P0.GC_GUIDE_STEP;P0.GC_GUIDE_STEP=function(step){if(step&&step.id){window.__tutorialAudit.steps.push(step.id)}else{window.__tutorialAudit.explicitNull=true}return original.apply(this,arguments)};}catch(e){}'
+        'window["PlatformManager"]=Ip;try{Object.assign(window,{p:p,n:n,zi:n,NetMsg:n,Ri:Ri,bh:bh,bt:bt,si:si,ye:ye,Xa:Xa,gb:gb,fb:fb,at:at,uh:uh,H:H,P0:P0,Ge:Ge,kn:kn});window.__tutorialAudit={explicitNull:false,steps:[]};const original=P0.GC_GUIDE_STEP;P0.GC_GUIDE_STEP=function(step){if(step&&step.id){window.__tutorialAudit.steps.push(step.id)}else{window.__tutorialAudit.explicitNull=true}return original.apply(this,arguments)};}catch(e){}'
       );
       await route.fulfill({
         status: 200,
@@ -889,17 +889,15 @@ async function prepareAndScreenshotJackpotAccount({
       timeout: 45000
     });
 
-    console.log(`⏳ [${username}] Đang chờ game tải 100% tài nguyên CDN và hiển thị giao diện chính...`);
+    console.log(`⏳ [${username}] Đang chờ game kết nối và nạp 100% tài nguyên CDN giao diện chính...`);
     try {
       await page.waitForFunction(() => {
         try {
-          if (typeof window.bt !== 'undefined' && window.bt && typeof window.bt.getInstance === 'function') {
-            const b = window.bt.getInstance();
-            if (b) return true;
-          }
-          if (typeof window.si !== 'undefined' && window.si && typeof window.si.getInstance === 'function') {
-            return true;
-          }
+          const netOk = window.n && window.n.isConnect;
+          const heroDataOk = window.H && window.H.data && (window.H.data.lv > 0 || window.H.data.name);
+          const cityOk = typeof window.ye !== 'undefined' && window.ye.getInstance && window.ye.getInstance().inStage();
+          const menuOk = typeof window.bt !== 'undefined' && window.bt.getInstance && window.bt.getInstance().inStage();
+          return !!(netOk && heroDataOk && (cityOk || menuOk));
         } catch (_) {}
         return false;
       }, { timeout: 60000, polling: 1000 });
@@ -908,8 +906,8 @@ async function prepareAndScreenshotJackpotAccount({
       console.warn(`⚠️ [${username}] Hết 60s chờ UI chính, tiến hành kích hoạt giao diện...`);
     }
 
-    // Chờ 2.5s để UI và hoạt ảnh vào game (loginTween) ổn định hoàn toàn
-    await page.waitForTimeout(2500);
+    // Chờ 5s để UI và hoạt ảnh vào game (loginTween, Top HUD, Bottom Bar) ổn định 100% trên VPS nước ngoài
+    await page.waitForTimeout(5000);
 
     // Let the real client enter scenes and expose the actual current guide.
     if (!tutorialConfirmed(currentTutorialEvidence())) {
@@ -954,17 +952,15 @@ async function prepareAndScreenshotJackpotAccount({
         if (window.Ri && Ri.getInstance) {
           Ri.getInstance().setGuideMode(false);
         }
-        if (window.be && typeof be.closeFull === 'function') {
-          be.closeFull();
-        }
       } catch (_) {}
     });
 
     // 3. Mở Túi Thần Tướng một cách chắc chắn 100%:
     // - Đăng ký panel Thần Tướng vào bottom menu bt
-    // - Cấu hình sort ưu tiên tướng jackpot lên đầu
-    // - Gọi trực tiếp si.getInstance().open(0) và reflushHero()
-    for (let attempt = 1; attempt <= 4; attempt++) {
+    // - Kích hoạt mở panel và click tab Thần Tướng (tọa độ x=115, y=770)
+    // - Retry lên tới 8 lần (mỗi lần 1.5s) kèm kiểm tra chặt chẽ isHeroBagOpen
+    let heroBagReady = false;
+    for (let attempt = 1; attempt <= 8; attempt++) {
       await page.evaluate(({ targetNames, targetIds }) => {
         try {
           const isTarget = (h) => {
@@ -977,32 +973,32 @@ async function prepareAndScreenshotJackpotAccount({
             }
             return false;
           };
-          if (window.tt) {
-            window.tt.combatheroSort = (a, b) => {
-              const aT = isTarget(a), bT = isTarget(b);
-              if (aT && !bT) return -1;
-              if (!aT && bT) return 1;
-              return (b.star || 0) - (a.star || 0) || (b.lv || 0) - (a.lv || 0);
-            };
-          }
+          const sortFn = (a, b) => {
+            const aT = isTarget(a), bT = isTarget(b);
+            if (aT && !bT) return -1;
+            if (!aT && bT) return 1;
+            return (b.star || 0) - (a.star || 0) || (b.lv || 0) - (a.lv || 0);
+          };
+          if (window.kn) window.kn.combatheroSort = sortFn;
+          if (window.tt) window.tt.combatheroSort = sortFn;
         } catch (_) {}
+
         try {
           if (window.bt && bt.getInstance) {
             const mb = bt.getInstance();
             if (window.ye && !mb.index2Panel[0]) mb.register(0, ye.getInstance());
             if (window.si) mb.register(1, si.getInstance());
+            if (mb.selectedIndex === 1) mb.selectedIndex = -1;
             mb.onTab(1);
           }
         } catch (_) {}
+
         try {
           if (window.si && si.getInstance) {
             const s = si.getInstance();
             s.open(0);
             if (typeof s.reflushHero === 'function') s.reflushHero();
             if (typeof s.setList === 'function') s.setList(0, 0);
-            if (window.Laya && Laya.stage && s.ui && !s.ui.parent) {
-              Laya.stage.addChild(s.ui);
-            }
           }
         } catch (_) {}
       }, {
@@ -1011,30 +1007,48 @@ async function prepareAndScreenshotJackpotAccount({
       });
 
       try {
-        await page.mouse.click(113, 770);
+        await page.mouse.click(115, 770);
       } catch (_) {}
 
-      const opened = await page.evaluate(() => {
+      await page.waitForTimeout(1500);
+
+      heroBagReady = await page.evaluate(() => {
         try {
-          if (window.si && si.getInstance) {
-            const s = si.getInstance();
-            if (s && ((typeof s.inStage === 'function' && s.inStage()) || (s.ui && (s.ui.inStage ? s.ui.inStage() : !!s.ui.parent)))) {
-              return !!(s.ui && s.ui.cardList && s.ui.cardList.list);
-            }
-          }
-        } catch (_) {}
-        return false;
+          const s = window.si?.getInstance();
+          if (!s) return false;
+          const stageOk = (typeof s.inStage === 'function' && s.inStage()) || (s.ui && (s.ui.inStage ? s.ui.inStage() : !!s.ui.parent));
+          const list = s.ui?.cardList?.list;
+          const rows = list?.dataSource || list?.array;
+          return !!(stageOk && list && Array.isArray(rows) && rows.length > 0);
+        } catch (_) { return false; }
       });
 
-      if (opened) {
-        console.log(`✅ [${username}] Đã mở Túi Thần Tướng thành công (Lần ${attempt})!`);
+      if (heroBagReady) {
+        console.log(`✅ [${username}] Đã mở và nạp danh sách Túi Thần Tướng thành công (Lần ${attempt})!`);
         break;
       }
-      await page.waitForTimeout(1000);
+      console.log(`⏳ [${username}] Đang mở Túi Thần Tướng... (Thử lần ${attempt}/8)`);
     }
 
-    // Chờ tối đa 6s để danh sách thẻ tướng trong Túi Thần Tướng tải hoàn tất
-    for (let w = 0; w < 12; w++) {
+    if (!heroBagReady) {
+      console.warn(`⚠️ [${username}] Chưa thấy cardList sau 8 lần, kích hoạt fallback cưỡng bức mount Laya.stage...`);
+      await page.evaluate(() => {
+        try {
+          const s = window.si?.getInstance();
+          if (s) {
+            s.open(0);
+            if (s.ui && window.Laya?.stage && !s.ui.parent) {
+              window.Laya.stage.addChild(s.ui);
+            }
+            if (typeof s.reflushHero === 'function') s.reflushHero();
+          }
+        } catch (_) {}
+      });
+      await page.waitForTimeout(3000);
+    }
+
+    // Chờ tối đa 8s để danh sách thẻ tướng trong Túi Thần Tướng tải hoàn tất
+    for (let w = 0; w < 16; w++) {
       const hasListData = await page.evaluate(() => {
         try {
           const comp = window.si?.getInstance()?.ui?.cardList?.list;
@@ -1048,7 +1062,7 @@ async function prepareAndScreenshotJackpotAccount({
 
     // Tự động sắp xếp 2 hoặc 3 tướng jackpot đứng kề nhau ngay hàng đầu (Slot 1 & Slot 2)
     let photoOrder = { top: [], ordered: false, topMatchCount: 0, totalRows: 0 };
-    for (let bagTry = 0; bagTry < 12; bagTry++) {
+    for (let bagTry = 0; bagTry < 15; bagTry++) {
       photoOrder = await page.evaluate(({ targetHeroIds, targetHeroNames }) => {
         try {
           const normNames = (targetHeroNames || []).map(n => String(n || '').toLowerCase().trim());
@@ -1086,6 +1100,7 @@ async function prepareAndScreenshotJackpotAccount({
           let rows = comp?.dataSource || comp?.array;
           if (!Array.isArray(rows) || !rows.length) {
             if (window.tt?.heros && Array.isArray(window.tt.heros)) rows = window.tt.heros;
+            else if (window.kn?.heros && Array.isArray(window.kn.heros)) rows = window.kn.heros;
           }
           if (!Array.isArray(rows) || !rows.length) {
             return { top: [], ordered: false, topMatchCount: 0, totalRows: 0 };
@@ -1105,7 +1120,7 @@ async function prepareAndScreenshotJackpotAccount({
             comp.array = rows;
             try {
               if (comp.cells && comp.renderHandler) {
-                for (let i = 0; i < Math.min(6, rows.length); i++) {
+                for (let i = 0; i < Math.min(8, rows.length); i++) {
                   if (comp.cells[i]) comp.renderHandler.runWith([comp.cells[i], i]);
                 }
               }
@@ -1141,8 +1156,21 @@ async function prepareAndScreenshotJackpotAccount({
       winnerPhotoOrdered = true;
     }
 
-    // Chờ 3.5s để danh sách thẻ tướng 5 sao hiển thị rõ ràng, avatar đầy đủ
-    await page.waitForTimeout(3500);
+    // Chờ 7.5s (buffer VPS mạng quốc tế) để danh sách thẻ tướng 5 sao hiển thị rõ ràng, avatar đầy đủ trước khi chụp
+    await page.waitForTimeout(7500);
+
+    const finalBagCheck = await page.evaluate(() => {
+      try {
+        const s = window.si?.getInstance();
+        return !!(s && (s.inStage?.() || s.ui?.parent) && s.ui?.cardList?.list);
+      } catch (_) { return false; }
+    });
+    if (!finalBagCheck) {
+      console.warn(`⚠️ [${username}] UI có dấu hiệu chưa hiển thị Túi Thần Tướng, thử ấn tab Thần Tướng trước khi chụp...`);
+      await page.mouse.click(115, 770);
+      await page.waitForTimeout(4000);
+    }
+
     await page.screenshot({ path: heroShotPath });
     console.log(`📸 [${username}] Đã chụp Túi Thần Tướng -> ${heroShotPath}`);
   } catch (err) {
