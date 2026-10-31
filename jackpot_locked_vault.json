@@ -3919,5 +3919,27 @@
     "lockedAt": "2026-10-31T02:38:08.801Z",
     "serverId": "610110",
     "serverName": "[S110] Sư Đà Lĩnh-S10"
+  },
+  {
+    "idx": 14499803,
+    "username": "ntdung14499803",
+    "password": "dngu68nz",
+    "accId": "725170344",
+    "phone": "0397215584",
+    "funid": "387079767",
+    "lockedAt": "2026-10-31T02:42:16.555Z",
+    "serverId": "610110",
+    "serverName": "[S110] Sư Đà Lĩnh-S10"
+  },
+  {
+    "idx": 125070,
+    "username": "ntdung125070",
+    "password": "ntd73kyha",
+    "accId": "721924109",
+    "phone": "0399951185",
+    "funid": "386747330",
+    "lockedAt": "2026-10-31T02:43:12.193Z",
+    "serverId": "610110",
+    "serverName": "[S110] Sư Đà Lĩnh-S10"
   }
 ]
