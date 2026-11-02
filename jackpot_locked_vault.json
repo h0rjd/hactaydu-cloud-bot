@@ -4843,5 +4843,27 @@
     "lockedAt": "2026-11-02T16:27:34.807Z",
     "serverId": "610119",
     "serverName": "[S119] Quảng Hàn Cung-S9"
+  },
+  {
+    "idx": 250429,
+    "username": "ntdung250429",
+    "password": "dby6567zm",
+    "accId": "721966893",
+    "phone": "0363885196",
+    "funid": "386751852",
+    "lockedAt": "2026-11-02T16:33:51.975Z",
+    "serverId": "610119",
+    "serverName": "[S119] Quảng Hàn Cung-S9"
+  },
+  {
+    "idx": 250451,
+    "username": "ntdung250451",
+    "password": "tdbup7zd",
+    "accId": "721969961",
+    "phone": "0965135865",
+    "funid": "386752175",
+    "lockedAt": "2026-11-02T16:34:12.341Z",
+    "serverId": "610119",
+    "serverName": "[S119] Quảng Hàn Cung-S9"
   }
 ]
