@@ -4777,5 +4777,16 @@
     "lockedAt": "2026-11-01T21:42:14.064Z",
     "serverId": "610117",
     "serverName": "[S117] Quảng Hàn Cung-S7"
+  },
+  {
+    "idx": 245592,
+    "username": "ntdung245592",
+    "password": "ntd637dxn",
+    "accId": "722001754",
+    "phone": "0361508456",
+    "funid": "386755423",
+    "lockedAt": "2026-11-02T03:05:44.089Z",
+    "serverId": "610118",
+    "serverName": "[S118] Quảng Hàn Cung-S8"
   }
 ]
