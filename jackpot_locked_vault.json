@@ -5129,5 +5129,16 @@
     "lockedAt": "2026-11-03T02:29:51.799Z",
     "serverId": "610120",
     "serverName": "[S120] Quảng Hàn Cung-S10"
+  },
+  {
+    "idx": 245672,
+    "username": "ntdung245672",
+    "password": "dgd7jdhp",
+    "accId": "722016749",
+    "phone": "0389336610",
+    "funid": "386756941",
+    "lockedAt": "2026-11-03T03:06:12.702Z",
+    "serverId": "610121",
+    "serverName": "[S121] Thông Thiên Hà-S1"
   }
 ]
