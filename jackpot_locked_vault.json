@@ -7010,5 +7010,27 @@
     "lockedAt": "2026-11-04T05:21:28.503Z",
     "serverId": "610124",
     "serverName": "[S124] Thông Thiên Hà-S4"
+  },
+  {
+    "idx": 355294,
+    "username": "ntdung355294",
+    "password": "dby23xqdr",
+    "accId": "724998641",
+    "phone": "0377895890",
+    "funid": "387059311",
+    "lockedAt": "2026-11-04T05:33:15.580Z",
+    "serverId": "610124",
+    "serverName": "[S124] Thông Thiên Hà-S4"
+  },
+  {
+    "idx": 13058615,
+    "username": "ntdung13058615",
+    "password": "dbyud2kdr",
+    "accId": "725168713",
+    "phone": "0388527872",
+    "funid": "387079571",
+    "lockedAt": "2026-11-04T05:35:17.856Z",
+    "serverId": "610124",
+    "serverName": "[S124] Thông Thiên Hà-S4"
   }
 ]
