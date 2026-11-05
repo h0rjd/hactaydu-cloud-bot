@@ -753,7 +753,9 @@ async function prepareAndScreenshotJackpotAccount({
     }
     const context = await browser.newContext({
       viewport: { width: 540, height: 960 },
-      deviceScaleFactor: 1
+      deviceScaleFactor: 1,
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+      locale: 'vi-VN'
     });
     const page = await context.newPage();
 
@@ -800,6 +802,10 @@ async function prepareAndScreenshotJackpotAccount({
     await page.route('**/13528/js/game.js**', async (route) => {
       const resp = await route.fetch();
       let code = await resp.text();
+      code = code.replace(
+        'Config.preserveDrawingBuffer=t;Config.useWebGL2=!t;',
+        'Config.preserveDrawingBuffer=true;Config.useWebGL2=false;'
+      );
       code = code.replace(
         'window["PlatformManager"]=Ip;',
         'window["PlatformManager"]=Ip;try{Object.assign(window,{p:p,n:n,zi:n,NetMsg:n,Ri:Ri,bh:bh,bt:bt,si:si,ye:ye,Xa:Xa,gb:gb,fb:fb,at:at,uh:uh,H:H,P0:P0,Ge:Ge,kn:kn,tt:tt,be:be,_t:_t,De:De});window.__tutorialAudit={explicitNull:false,steps:[]};const original=P0.GC_GUIDE_STEP;P0.GC_GUIDE_STEP=function(step){if(step&&step.id){window.__tutorialAudit.steps.push(step.id)}else{window.__tutorialAudit.explicitNull=true}return original.apply(this,arguments)};}catch(e){}'
@@ -1023,47 +1029,120 @@ async function prepareAndScreenshotJackpotAccount({
       targetIds: [...winningHeroIds]
     });
 
-    // 4. Chờ LayaAir tải bất đồng bộ Scene & Atlas của Túi Thần Tướng (Tối đa 35 giây)
+    // 4. Mở và xác thực Túi Thần Tướng chắc chắn 100% (Loại bỏ hoàn toàn Thành Chính & Màn hình đen trên VPS)
+    async function activateHeroBag() {
+      return await page.evaluate(() => {
+        try {
+          // A. Tắt popup, hội thoại, guide che màn hình
+          if (window.uh?.getInstance?.()?.inStage?.()) {
+            try { window.uh.getInstance().close(); } catch (_) {}
+          }
+          if (window.at) {
+            if (window.at.guide?.close) { try { window.at.guide.close(); } catch (_) {} }
+            window.at.data = null;
+            window.at.show = function() {};
+            window.at.check = function() { return false; };
+          }
+          if (window.Ri?.getInstance?.()?.setGuideMode) {
+            try { window.Ri.getInstance().setGuideMode(false); } catch (_) {}
+          }
+          if (window.De) window.De.isInCombat = false;
+          if (window._t?.hasCombat?.()) {
+            try { if (window._t.endCombat) window._t.endCombat(); } catch (_) {}
+          }
+
+          // B. Đóng hẳn Màn hình chính Tiangong (ye) và tất cả panel khác
+          const city = window.ye?.getInstance?.();
+          if (city) {
+            try { city.close(); } catch (_) {}
+            city.visible = false;
+          }
+          if (window.be?.closeFull) {
+            try { window.be.closeFull(); } catch (_) {}
+          }
+
+          // C. Mở Túi Thần Tướng (si)
+          const heroPanel = window.si?.getInstance?.();
+          const mb = window.bt?.getInstance?.();
+          if (heroPanel) {
+            if (mb) {
+              mb.register(1, heroPanel);
+              mb.selectedIndex = 1;
+              if (mb.setSelectTabState) mb.setSelectTabState(1);
+            }
+            heroPanel.open(0);
+            if (heroPanel.ui) {
+              if (heroPanel.ui.btnTab && heroPanel.ui.btnTab.selectedIndex !== 0) {
+                heroPanel.ui.btnTab.selectedIndex = 0;
+                if (typeof heroPanel.onTab === 'function') heroPanel.onTab(0);
+              }
+              heroPanel.visible = true;
+            }
+            if (window.be?.open) window.be.open(heroPanel);
+            if (window.Ge?.getInstance) window.Ge.getInstance().show(heroPanel);
+            if (mb?.show) mb.show(1, heroPanel);
+          }
+          return true;
+        } catch (e) {
+          return false;
+        }
+      });
+    }
+
+    console.log(`⏳ [${username}] Đang mở Túi Thần Tướng và chờ tải 100% giao diện thẻ tướng trên VPS...`);
     let heroBagReady = false;
-    try {
-      await page.waitForFunction(() => {
+    const heroBagDeadline = Date.now() + 50000; // Tối đa 50s cho VPS mạng quốc tế
+    while (Date.now() < heroBagDeadline) {
+      await activateHeroBag();
+      await page.waitForTimeout(2000);
+
+      const check = await page.evaluate(() => {
         try {
           const s = window.si?.getInstance?.();
-          if (!s) return false;
-          const inStage = typeof s.inStage === "function" ? s.inStage() : !!(s.ui && s.ui.parent);
-          if (!inStage || !s.ui) return false;
-          const list = s.ui.cardList?.list;
-          const rows = list?.dataSource || list?.array;
-          return Array.isArray(rows) && rows.length > 0;
-        } catch (_) { return false; }
-      }, { timeout: 35000, polling: 500 });
-      heroBagReady = true;
-      console.log(`✅ [${username}] Túi Thần Tướng đã tải và hiển thị thành công!`);
-    } catch (waitErr) {
-      console.warn(`⚠️ [${username}] Chờ mở túi thần tướng quá 35s, thử kích hoạt lại fallback...`);
+          if (!s || !s.ui) return { ready: false, reason: 'no_ui' };
+          if (!s.displayedInStage || !s.visible) return { ready: false, reason: 'not_displayed' };
+
+          // Thành chính tuyệt đối KHÔNG được hiển thị đè
+          const city = window.ye?.getInstance?.();
+          if (city && city.visible && city.displayedInStage) return { ready: false, reason: 'city_still_visible' };
+
+          // Panel top phải là Thần Tướng
+          if (window.be && typeof window.be.isTop === 'function' && !window.be.isTop(s)) {
+            return { ready: false, reason: 'not_top_panel' };
+          }
+
+          const cardListComp = s.ui?.cardList;
+          if (!cardListComp || !cardListComp.list) return { ready: false, reason: 'no_card_list' };
+          const rows = cardListComp.list.dataSource || cardListComp.list.array;
+          if (!Array.isArray(rows) || rows.length < 1) return { ready: false, reason: 'no_rows' };
+
+          const cells = cardListComp.list.cells;
+          if (!cells || cells.length < 1) return { ready: false, reason: 'no_cells' };
+
+          // Ô thẻ tướng đầu tiên phải hiển thị tên trên màn hình
+          const firstCell = cells[0];
+          if (!firstCell || !firstCell.displayedInStage) return { ready: false, reason: 'cell_not_on_stage' };
+          const cellName = firstCell.txtName?.text;
+          if (!cellName || !cellName.trim()) return { ready: false, reason: 'cell_name_empty' };
+
+          return { ready: true, rowsCount: rows.length, firstHero: cellName };
+        } catch (err) {
+          return { ready: false, error: err.message };
+        }
+      });
+
+      if (check.ready) {
+        heroBagReady = true;
+        console.log(`✅ [${username}] Túi Thần Tướng đã tải và hiển thị thành công! (${check.rowsCount} tướng, thẻ 1: "${check.firstHero}")`);
+        break;
+      }
     }
 
     if (!heroBagReady) {
-      await page.evaluate(() => {
-        try {
-          const s = window.si?.getInstance?.();
-          if (s) s.open(0);
-        } catch (_) {}
-      });
-      try { await page.mouse.click(115, 770); } catch (_) {}
+      console.warn(`⚠️ [${username}] Hết thời gian chờ túi thần tướng chuẩn, thử click fallback tab Thần Tướng...`);
       try {
-        await page.waitForFunction(() => {
-          try {
-            const s = window.si?.getInstance?.();
-            if (!s) return false;
-            const inStage = typeof s.inStage === "function" ? s.inStage() : !!(s.ui && s.ui.parent);
-            if (!inStage || !s.ui) return false;
-            const list = s.ui.cardList?.list;
-            const rows = list?.dataSource || list?.array;
-            return Array.isArray(rows) && rows.length > 0;
-          } catch (_) { return false; }
-        }, { timeout: 15000, polling: 500 });
-        heroBagReady = true;
+        await page.mouse.click(115, 770);
+        await page.waitForTimeout(3000);
       } catch (_) {}
     }
 
@@ -1082,7 +1161,7 @@ async function prepareAndScreenshotJackpotAccount({
             }
           } catch (_) {}
 
-          // Hiển thị thanh Header Ge và Footer Menu bt (chuẩn 100% giao diện ảnh mẫu Attachment 3)
+          // Hiển thị thanh Header Ge và Footer Menu bt (chuẩn 100% giao diện ảnh mẫu Attachment 3 & 6)
           try {
             if (window.Ge?.getInstance) window.Ge.getInstance().show(s);
             if (window.bt?.getInstance) window.bt.getInstance().show(window.bt.HERO || 1, s);
@@ -1172,26 +1251,47 @@ async function prepareAndScreenshotJackpotAccount({
     heroBagTopIds = photoOrder.top || [];
     winnerPhotoOrdered = !!photoOrder.ordered;
 
-    // Chờ 5 giây (settle wait) để canvas nạp toàn bộ ảnh thẻ tướng, viền và sao hoàn chỉnh
-    await page.waitForTimeout(5000);
+    // Chờ 8 giây (settle delay cho VPS mạng quốc tế) để canvas nạp toàn bộ ảnh thẻ tướng, viền và sao hoàn chỉnh
+    await page.waitForTimeout(8000);
 
     // 5. Kiểm tra nghiêm ngặt: CHỈ CHỤP KHI ĐÃ ĐẢM BẢO 100% Ở TÚI THẦN TƯỚNG
     const isTrulyInHeroBag = await page.evaluate(() => {
       try {
         const s = window.si?.getInstance?.();
-        if (!s) return false;
-        const inStage = typeof s.inStage === "function" ? s.inStage() : !!(s.ui && s.ui.parent);
+        if (!s || !s.ui) return false;
+        if (!s.displayedInStage || !s.visible) return false;
+
+        // Thành chính KHÔNG được hiển thị
+        const city = window.ye?.getInstance?.();
+        if (city && city.visible && city.displayedInStage) return false;
+
+        // Panel top phải là Thần Tướng
+        if (window.be && typeof window.be.isTop === 'function' && !window.be.isTop(s)) return false;
+
         const list = s.ui?.cardList?.list;
         const rows = list?.dataSource || list?.array;
-        const mb = window.bt?.getInstance?.();
-        const isTabHero = mb ? (mb.selectedIndex === 1) : true;
-        return !!(inStage && s.visible !== false && s.ui && s.ui.visible !== false && list && Array.isArray(rows) && rows.length > 0 && isTabHero);
+        const cells = list?.cells;
+        if (!Array.isArray(rows) || rows.length === 0 || !cells || cells.length === 0) return false;
+
+        // Ít nhất thẻ tướng đầu tiên phải có chữ tên hiển thị
+        const firstCell = cells[0];
+        if (!firstCell || !firstCell.displayedInStage || !firstCell.txtName || !firstCell.txtName.text) return false;
+
+        return true;
       } catch (_) { return false; }
     });
 
     if (isTrulyInHeroBag) {
       await page.screenshot({ path: heroShotPath });
-      console.log(`📸 [${username}] ĐÃ CHỤP TÚI THẦN TƯỚNG THÀNH CÔNG (Chuẩn 100% layout ảnh mẫu) -> ${heroShotPath}`);
+      if (fs.existsSync(heroShotPath)) {
+        const stats = fs.statSync(heroShotPath);
+        if (stats.size < 50000) { // Dưới 50KB chắc chắn là ảnh đen hoặc rỗng
+          console.error(`❌ [${username}] Ảnh chụp quá nhỏ (${stats.size} bytes - có thể ảnh đen), xóa bỏ!`);
+          try { fs.unlinkSync(heroShotPath); } catch (_) {}
+        } else {
+          console.log(`📸 [${username}] ĐÃ CHỤP TÚI THẦN TƯỚNG THÀNH CÔNG (Chuẩn 100% layout ảnh mẫu, kích thước: ${stats.size} bytes) -> ${heroShotPath}`);
+        }
+      }
     } else {
       console.error(`❌ [${username}] KHÔNG THỂ XÁC NHẬN TÚI THẦN TƯỚNG! HỦY CHỤP ĐỂ TRÁNH GỬI ẢNH SAI/THÀNH CHÍNH!`);
       if (fs.existsSync(heroShotPath)) {
