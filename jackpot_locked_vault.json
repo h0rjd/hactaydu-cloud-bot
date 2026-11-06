@@ -10761,5 +10761,27 @@
     "lockedAt": "2026-11-06T17:19:05.408Z",
     "serverId": "610132",
     "serverName": "[S132] Lôi Âm Tự-S2"
+  },
+  {
+    "idx": 10975551,
+    "username": "ntdung10975551",
+    "password": "dbyr7mnmr",
+    "accId": "725164628",
+    "phone": "0382314230",
+    "funid": "387079115",
+    "lockedAt": "2026-11-06T17:22:41.371Z",
+    "serverId": "610132",
+    "serverName": "[S132] Lôi Âm Tự-S2"
+  },
+  {
+    "idx": 5537218,
+    "username": "ntdung5537218",
+    "password": "tdwm3pc3",
+    "accId": "725157031",
+    "phone": "0393872621",
+    "funid": "387078220",
+    "lockedAt": "2026-11-06T17:22:49.049Z",
+    "serverId": "610132",
+    "serverName": "[S132] Lôi Âm Tự-S2"
   }
 ]
