@@ -10574,5 +10574,38 @@
     "lockedAt": "2026-11-06T14:32:02.852Z",
     "serverId": "610131",
     "serverName": "[S131] Lôi Âm Tự-S1"
+  },
+  {
+    "idx": 355297,
+    "username": "ntdung355297",
+    "password": "dnnf4fpm",
+    "accId": "724999541",
+    "phone": "0987688600",
+    "funid": "387059403",
+    "lockedAt": "2026-11-06T14:48:19.339Z",
+    "serverId": "610131",
+    "serverName": "[S131] Lôi Âm Tự-S1"
+  },
+  {
+    "idx": 355398,
+    "username": "ntdung355398",
+    "password": "td9wxurh",
+    "accId": "725046934",
+    "phone": "0397430877",
+    "funid": "387064345",
+    "lockedAt": "2026-11-06T14:50:29.395Z",
+    "serverId": "610131",
+    "serverName": "[S131] Lôi Âm Tự-S1"
+  },
+  {
+    "idx": 355444,
+    "username": "ntdung355444",
+    "password": "dnparkk6",
+    "accId": "725065894",
+    "phone": "0987899741",
+    "funid": "387066343",
+    "lockedAt": "2026-11-06T14:50:40.869Z",
+    "serverId": "610131",
+    "serverName": "[S131] Lôi Âm Tự-S1"
   }
 ]
