@@ -206,7 +206,7 @@ async function registerViaHttp(info, seq) {
     const actionUrl = mAct ? mAct[1].replace(/&amp;/g, '&') : entryUrl;
 
     if (!token) {
-      console.log(`⚠️ [HTTP Reg #${seq}] CSRF _token missing. Status: ${pageRes.statusCode}, Snippet: ${html.slice(0, 150).replace(/\s+/g, ' ')}`);
+      console.log(`⚠️ [HTTP Reg #${seq}] Status: ${pageRes.statusCode}, Headers: ${JSON.stringify(pageRes.headers)}, Body: ${html.slice(0, 1000)}`);
       return null;
     }
 
