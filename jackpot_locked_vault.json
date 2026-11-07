@@ -12224,5 +12224,27 @@
     "lockedAt": "2026-11-07T19:52:41.739Z",
     "serverId": "610134",
     "serverName": "[S134] Lôi Âm Tự-S4"
+  },
+  {
+    "idx": 125088,
+    "username": "ntdung125088",
+    "password": "dg6pwue9",
+    "accId": "721926291",
+    "phone": "0981105849",
+    "funid": "386747560",
+    "lockedAt": "2026-11-07T19:55:22.106Z",
+    "serverId": "610134",
+    "serverName": "[S134] Lôi Âm Tự-S4"
+  },
+  {
+    "idx": 125118,
+    "username": "ntdung125118",
+    "password": "ntdncxwy6",
+    "accId": "721929243",
+    "phone": "0381424322",
+    "funid": "386747872",
+    "lockedAt": "2026-11-07T19:55:48.434Z",
+    "serverId": "610134",
+    "serverName": "[S134] Lôi Âm Tự-S4"
   }
 ]
