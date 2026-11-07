@@ -1,14 +1,15 @@
 /**
  * cloud_reg_shard.js - High-throughput Funtap Account Generator & Sync Shard
  * Runs on ephemeral GitHub Actions VM with unique Azure datacenter IP.
+ * Uses Hybrid Fast-HTTP + Playwright fallback for maximum registration yield.
  */
 
-const { chromium } = require('playwright');
 const https = require('https');
 const http = require('http');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { URL, URLSearchParams } = require('url');
 
 const WORKER_ID = parseInt(process.env.SHARD_WORKER_ID || '1', 10);
 const TARGET_COUNT = parseInt(process.env.MAX_ACCS_PER_VM || '3', 10);
@@ -44,7 +45,6 @@ function randomDigits(len) {
 }
 
 function generateAccountDetails(workerId, seq) {
-  // Use workerId + timestamp + random to ensure 100% collision-free usernames across 252 VMs
   const tsPart = Date.now().toString().slice(-4);
   const rndPart = Math.floor(100 + Math.random() * 900);
   const username = `ntdung${tsPart}${workerId}${seq}${rndPart}`.slice(0, 18);
@@ -147,8 +147,119 @@ async function saveShardToGitHub(accounts, workerId) {
   });
 }
 
-async function registerAccount(browser, workerId, seq) {
-  const info = generateAccountDetails(workerId, seq);
+/**
+ * Fast direct HTTP registration
+ */
+function registerViaHttp(info, seq) {
+  return new Promise((resolve) => {
+    const t0 = Date.now();
+    const entryUrl = `https://core.sdkmain.com/v1/apps/2a456b78cf5122cd9278ef24b4d7bfb9/9.9.9.5/register/phone?sdk_version=6.1.2&device_network=wifi&device_os=Android%2012&device_name=${encodeURIComponent(info.device)}`;
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7'
+    };
+
+    const getReq = https.request(entryUrl, { method: 'GET', headers, timeout: 8000 }, (res) => {
+      if (res.statusCode === 429) {
+        console.log(`⚠️ [HTTP Reg #${seq}] HTTP 429 (IP Rate Limited)`);
+        return resolve(null);
+      }
+
+      const cookies = [];
+      if (res.headers['set-cookie']) {
+        for (const c of res.headers['set-cookie']) {
+          cookies.push(c.split(';')[0]);
+        }
+      }
+      const cookieHeader = cookies.join('; ');
+
+      let html = '';
+      res.on('data', chunk => html += chunk);
+      res.on('end', () => {
+        const mTok = html.match(/name=["']_token["']\s+value=["']([^"']+)["']/);
+        const token = mTok ? mTok[1] : '';
+        const mAct = html.match(/<form[^>]+action=["']([^"']+)["']/);
+        const actionUrl = mAct ? mAct[1].replace(/&amp;/g, '&') : entryUrl;
+
+        if (!token) {
+          console.log(`⚠️ [HTTP Reg #${seq}] CSRF _token missing in HTML`);
+          return resolve(null);
+        }
+
+        const postData = new URLSearchParams({
+          '_token': token,
+          'username': info.username,
+          'fullname': info.fullname,
+          'birthday': info.birthday,
+          'phone': info.phone,
+          'password': info.password
+        }).toString();
+
+        const postHeaders = {
+          ...headers,
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Length': Buffer.byteLength(postData),
+          'Cookie': cookieHeader,
+          'Referer': entryUrl
+        };
+
+        const postReq = https.request(actionUrl, { method: 'POST', headers: postHeaders, timeout: 10000 }, (postRes) => {
+          let postBody = '';
+          postRes.on('data', chunk => postBody += chunk);
+          postRes.on('end', () => {
+            const dur = ((Date.now() - t0) / 1000).toFixed(2);
+            if (postBody.includes('loginSuccess')) {
+              const mRes = postBody.match(/appSDKexecute\('loginSuccess',\s*(\{.*?\})\);/);
+              if (mRes) {
+                try {
+                  const resObj = JSON.parse(mRes[1]);
+                  const dataBlock = resObj.data || {};
+                  const accBlock = dataBlock.account || {};
+                  const accId = String(accBlock.account_id || dataBlock.id || '');
+                  const funId = String(dataBlock.id || accBlock.account_id || '');
+                  const accessToken = String(resObj.access_token || 'r');
+
+                  const acc = {
+                    idx: Math.floor(Date.now() / 1000) * 100 + seq,
+                    username: info.username,
+                    password: info.password,
+                    accId,
+                    phone: info.phone,
+                    funid: funId,
+                    accessToken
+                  };
+                  console.log(`✅ [HTTP Reg #${seq}] Created ${info.username} (AccID: ${accId}) in ${dur}s`);
+                  return resolve(acc);
+                } catch (e) {}
+              }
+            }
+            console.log(`⚠️ [HTTP Reg #${seq}] Non-success response in ${dur}s`);
+            resolve(null);
+          });
+        });
+
+        postReq.on('error', (e) => {
+          console.log(`⚠️ [HTTP Reg #${seq}] POST Error: ${e.message}`);
+          resolve(null);
+        });
+        postReq.write(postData);
+        postReq.end();
+      });
+    });
+
+    getReq.on('error', (e) => {
+      console.log(`⚠️ [HTTP Reg #${seq}] GET Error: ${e.message}`);
+      resolve(null);
+    });
+    getReq.end();
+  });
+}
+
+/**
+ * Playwright fallback
+ */
+async function registerViaPlaywright(browser, info, workerId, seq) {
   const context = await browser.newContext({
     userAgent: 'Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
     viewport: { width: 414, height: 896 },
@@ -156,8 +267,6 @@ async function registerAccount(browser, workerId, seq) {
   });
 
   const page = await context.newPage();
-
-  // Intercept JS Handler for instantaneous capture
   await page.addInitScript(() => {
     window.__sdkResults = [];
     window.JsHandler = {
@@ -172,69 +281,51 @@ async function registerAccount(browser, workerId, seq) {
     };
   });
 
-  // Block images and media for ultra-fast load
-  await page.route('**/*.{png,jpg,jpeg,gif,webp,svg,woff,woff2,ttf,otf}', route => route.abort());
-
-  const targetUrl = `https://core.sdkmain.com/v1/apps/2a456b78cf5122cd9278ef24b4d7bfb9/9.9.9.5/register/phone`
-    + `?sdk_version=6.1.2&device_network=wifi&device_os=Android%2012&device_name=${encodeURIComponent(info.device)}`;
-
+  const targetUrl = `https://core.sdkmain.com/v1/apps/2a456b78cf5122cd9278ef24b4d7bfb9/9.9.9.5/register/phone?sdk_version=6.1.2&device_network=wifi&device_os=Android%2012&device_name=${encodeURIComponent(info.device)}`;
   const t0 = Date.now();
   let accObj = null;
 
   try {
     await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-    await page.waitForSelector('#username', { timeout: 10000 });
+    await page.waitForSelector('#username', { timeout: 8000, state: 'attached' });
 
-    const submitRes = await page.evaluate((data) => {
-      try {
-        const u = document.getElementById('username');
-        const f = document.getElementById('fullname');
-        const b = document.getElementById('birthday');
-        const p = document.getElementById('phone');
-        const pwd = document.getElementById('password');
-        const form = document.querySelector('form');
+    await page.evaluate((data) => {
+      const u = document.getElementById('username');
+      const f = document.getElementById('fullname');
+      const b = document.getElementById('birthday');
+      const p = document.getElementById('phone');
+      const pwd = document.getElementById('password');
+      const form = document.querySelector('form');
+      if (!u || !form) return;
 
-        if (!u || !form) return { ok: false, error: 'Elements missing' };
+      u.value = data.username;
+      f.value = data.fullname;
+      b.value = data.birthday;
+      p.value = data.phone;
+      pwd.value = data.password;
 
-        u.value = data.username;
-        f.value = data.fullname;
-        b.value = data.birthday;
-        p.value = data.phone;
-        pwd.value = data.password;
+      for (const el of [u, f, b, p, pwd]) {
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      }
 
-        for (const el of [u, f, b, p, pwd]) {
-          el.dispatchEvent(new Event('input', { bubbles: true }));
-          el.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-
-        if (typeof grecaptcha !== 'undefined' && grecaptcha.enterprise) {
-          const siteKey = '6Lc7WFYsAAAAAIZ1uFlJpFgSlbcFFdGYHXgaVcVU';
-          grecaptcha.enterprise.ready(function() {
-            grecaptcha.enterprise.execute(siteKey, { action: 'submit' }).then(function(token) {
-              const rInput = document.getElementById('g-recaptcha-response');
-              if (rInput) rInput.value = token;
-              form.submit();
-            });
+      if (typeof grecaptcha !== 'undefined' && grecaptcha.enterprise) {
+        const siteKey = '6Lc7WFYsAAAAAIZ1uFlJpFgSlbcFFdGYHXgaVcVU';
+        grecaptcha.enterprise.ready(function() {
+          grecaptcha.enterprise.execute(siteKey, { action: 'submit' }).then(function(token) {
+            const rInput = document.getElementById('g-recaptcha-response');
+            if (rInput) rInput.value = token;
+            form.submit();
           });
-        } else {
-          form.submit();
-        }
-        return { ok: true };
-      } catch (err) {
-        return { ok: false, error: String(err) };
+        });
+      } else {
+        form.submit();
       }
     }, info);
 
-    if (!submitRes.ok) {
-      console.log(`[Worker #${workerId} - Seq #${seq}] Form evaluation error: ${submitRes.error}`);
-    }
-
-    // Wait for loginSuccess signal via bridge or HTML content
     let registeredInfo = null;
     for (let i = 0; i < 20; i++) {
       await page.waitForTimeout(200);
-
-      // Check bridge results first
       const sdkResults = await page.evaluate(() => window.__sdkResults || []).catch(() => []);
       for (const res of sdkResults) {
         if (res.command === 'loginSuccess' && res.params) {
@@ -244,21 +335,16 @@ async function registerAccount(browser, workerId, seq) {
       }
       if (registeredInfo) break;
 
-      // Fallback: check content regex
       const content = await page.content().catch(() => '');
       if (content.includes('loginSuccess')) {
         const m = content.match(/appSDKexecute\('loginSuccess',\s*(\{.*?\})\);/);
         if (m) {
-          try {
-            registeredInfo = JSON.parse(m[1]);
-            break;
-          } catch (e) {}
+          try { registeredInfo = JSON.parse(m[1]); break; } catch (e) {}
         }
       }
     }
 
     const dur = ((Date.now() - t0) / 1000).toFixed(2);
-
     if (registeredInfo) {
       const dataBlock = registeredInfo.data || {};
       const accountBlock = dataBlock.account || {};
@@ -270,19 +356,15 @@ async function registerAccount(browser, workerId, seq) {
         idx: Math.floor(Date.now() / 1000) * 100 + seq,
         username: info.username,
         password: info.password,
-        accId: accId,
+        accId,
         phone: info.phone,
         funid: funId,
         accessToken: token
       };
-
-      console.log(`✅ [Worker #${workerId} - Seq #${seq}] Created ${info.username} (AccID: ${accId}) in ${dur}s`);
-    } else {
-      console.log(`❌ [Worker #${workerId} - Seq #${seq}] Registration failed after ${dur}s`);
+      console.log(`✅ [Playwright #${seq}] Created ${info.username} (AccID: ${accId}) in ${dur}s`);
     }
-
   } catch (err) {
-    console.log(`⚠️ [Worker #${workerId} - Seq #${seq}] Error: ${err.message}`);
+    console.log(`⚠️ [Playwright #${seq}] Error: ${err.message}`);
   } finally {
     await context.close().catch(() => {});
   }
@@ -296,40 +378,49 @@ async function main() {
   console.log(`🌐 Public IP VM: GitHub Actions Azure Runner`);
   console.log(`====================================================`);
 
-  let browser;
-  try {
-    browser = await chromium.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-blink-features=AutomationControlled', '--disable-dev-shm-usage']
-    });
-  } catch (err) {
-    console.error(`💥 Failed to launch Chromium: ${err.message}`);
-    process.exit(1);
-  }
-
+  let browser = null;
   const createdAccounts = [];
 
   for (let seq = 1; seq <= TARGET_COUNT; seq++) {
-    const acc = await registerAccount(browser, WORKER_ID, seq);
+    const info = generateAccountDetails(WORKER_ID, seq);
+    // 1. Try Fast HTTP first (super fast 0.5s, no overhead)
+    let acc = await registerViaHttp(info, seq);
+
+    // 2. If HTTP failed, fallback to Playwright
+    if (!acc) {
+      if (!browser) {
+        try {
+          const { chromium } = require('playwright');
+          browser = await chromium.launch({
+            headless: true,
+            args: ['--no-sandbox', '--disable-blink-features=AutomationControlled', '--disable-dev-shm-usage']
+          });
+        } catch (e) {
+          console.log(`Cannot launch playwright: ${e.message}`);
+        }
+      }
+      if (browser) {
+        acc = await registerViaPlaywright(browser, info, WORKER_ID, seq);
+      }
+    }
+
     if (acc) {
       createdAccounts.push(acc);
-      // Stream push directly to Hub
       await pushToHub([acc]);
     }
+
     if (seq < TARGET_COUNT) {
-      await new Promise(r => setTimeout(r, 1200));
+      await new Promise(r => setTimeout(r, 1000));
     }
   }
 
-  await browser.close().catch(() => {});
+  if (browser) await browser.close().catch(() => {});
 
   console.log(`\n🎉 Shard #${WORKER_ID} completed: ${createdAccounts.length}/${TARGET_COUNT} accounts created.`);
 
   if (createdAccounts.length > 0) {
-    // Save to GitHub Shard Storage
     await saveShardToGitHub(createdAccounts, WORKER_ID);
 
-    // Also persist locally in workspace
     try {
       const shardsDir = path.join(__dirname, 'shards');
       fs.mkdirSync(shardsDir, { recursive: true });
@@ -341,5 +432,5 @@ async function main() {
 
 main().catch(err => {
   console.error(`Fatal error: ${err.message}`);
-  process.exit(0); // Exit 0 so next workflow steps / chain-next still proceed
+  process.exit(0);
 });
