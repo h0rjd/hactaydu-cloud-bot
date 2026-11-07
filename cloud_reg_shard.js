@@ -1,7 +1,7 @@
 /**
  * cloud_reg_shard.js - High-throughput Funtap Account Generator & Sync Shard
  * Runs on ephemeral GitHub Actions VM with unique Azure datacenter IP.
- * Uses Hybrid Fast-HTTP + Playwright fallback for maximum registration yield.
+ * Uses Hybrid Fast-HTTP + Playwright fallback with full redirect handling & diagnostics.
  */
 
 const https = require('https');
@@ -147,113 +147,135 @@ async function saveShardToGitHub(accounts, workerId) {
   });
 }
 
+function fetchWithRedirects(targetUrl, headers, maxRedirects = 3) {
+  return new Promise((resolve, reject) => {
+    const cookies = [];
+    function doRequest(currentUrl, redirectCount) {
+      if (redirectCount > maxRedirects) return reject(new Error('Too many redirects'));
+      const parsed = new URL(currentUrl);
+      const reqHeaders = {
+        ...headers,
+        'Cookie': cookies.join('; ')
+      };
+      const client = parsed.protocol === 'https:' ? https : http;
+      const req = client.request(parsed, { method: 'GET', headers: reqHeaders, timeout: 8000 }, (res) => {
+        if (res.headers['set-cookie']) {
+          for (const c of res.headers['set-cookie']) {
+            cookies.push(c.split(';')[0]);
+          }
+        }
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          const nextUrl = new URL(res.headers.location, currentUrl).toString();
+          return doRequest(nextUrl, redirectCount + 1);
+        }
+        let body = '';
+        res.on('data', c => body += c);
+        res.on('end', () => resolve({ statusCode: res.statusCode, headers: res.headers, cookies, body, finalUrl: currentUrl }));
+      });
+      req.on('error', reject);
+      req.on('timeout', () => { req.destroy(); reject(new Error('Request timeout')); });
+      req.end();
+    }
+    doRequest(targetUrl, 0);
+  });
+}
+
 /**
  * Fast direct HTTP registration
  */
-function registerViaHttp(info, seq) {
-  return new Promise((resolve) => {
-    const t0 = Date.now();
-    const entryUrl = `https://core.sdkmain.com/v1/apps/2a456b78cf5122cd9278ef24b4d7bfb9/9.9.9.5/register/phone?sdk_version=6.1.2&device_network=wifi&device_os=Android%2012&device_name=${encodeURIComponent(info.device)}`;
-    const headers = {
-      'User-Agent': 'Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7'
+async function registerViaHttp(info, seq) {
+  const t0 = Date.now();
+  const entryUrl = `https://core.sdkmain.com/v1/apps/2a456b78cf5122cd9278ef24b4d7bfb9/9.9.9.5/register/phone?sdk_version=6.1.2&device_network=wifi&device_os=Android%2012&device_name=${encodeURIComponent(info.device)}`;
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7'
+  };
+
+  try {
+    const pageRes = await fetchWithRedirects(entryUrl, headers);
+    if (pageRes.statusCode === 429) {
+      console.log(`⚠️ [HTTP Reg #${seq}] HTTP 429 (IP Rate Limited)`);
+      return null;
+    }
+
+    const html = pageRes.body;
+    const mTok = html.match(/name=["']_token["']\s+value=["']([^"']+)["']/);
+    const token = mTok ? mTok[1] : '';
+    const mAct = html.match(/<form[^>]+action=["']([^"']+)["']/);
+    const actionUrl = mAct ? mAct[1].replace(/&amp;/g, '&') : entryUrl;
+
+    if (!token) {
+      console.log(`⚠️ [HTTP Reg #${seq}] CSRF _token missing. Status: ${pageRes.statusCode}, Snippet: ${html.slice(0, 150).replace(/\s+/g, ' ')}`);
+      return null;
+    }
+
+    const postData = new URLSearchParams({
+      '_token': token,
+      'username': info.username,
+      'fullname': info.fullname,
+      'birthday': info.birthday,
+      'phone': info.phone,
+      'password': info.password
+    }).toString();
+
+    const postHeaders = {
+      ...headers,
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Length': Buffer.byteLength(postData),
+      'Cookie': pageRes.cookies.join('; '),
+      'Referer': pageRes.finalUrl
     };
 
-    const getReq = https.request(entryUrl, { method: 'GET', headers, timeout: 8000 }, (res) => {
-      if (res.statusCode === 429) {
-        console.log(`⚠️ [HTTP Reg #${seq}] HTTP 429 (IP Rate Limited)`);
-        return resolve(null);
-      }
+    return new Promise((resolve) => {
+      const parsedAction = new URL(actionUrl);
+      const postReq = https.request(parsedAction, { method: 'POST', headers: postHeaders, timeout: 10000 }, (postRes) => {
+        let postBody = '';
+        postRes.on('data', chunk => postBody += chunk);
+        postRes.on('end', () => {
+          const dur = ((Date.now() - t0) / 1000).toFixed(2);
+          if (postBody.includes('loginSuccess')) {
+            const mRes = postBody.match(/appSDKexecute\('loginSuccess',\s*(\{.*?\})\);/);
+            if (mRes) {
+              try {
+                const resObj = JSON.parse(mRes[1]);
+                const dataBlock = resObj.data || {};
+                const accBlock = dataBlock.account || {};
+                const accId = String(accBlock.account_id || dataBlock.id || '');
+                const funId = String(dataBlock.id || accBlock.account_id || '');
+                const accessToken = String(resObj.access_token || 'r');
 
-      const cookies = [];
-      if (res.headers['set-cookie']) {
-        for (const c of res.headers['set-cookie']) {
-          cookies.push(c.split(';')[0]);
-        }
-      }
-      const cookieHeader = cookies.join('; ');
-
-      let html = '';
-      res.on('data', chunk => html += chunk);
-      res.on('end', () => {
-        const mTok = html.match(/name=["']_token["']\s+value=["']([^"']+)["']/);
-        const token = mTok ? mTok[1] : '';
-        const mAct = html.match(/<form[^>]+action=["']([^"']+)["']/);
-        const actionUrl = mAct ? mAct[1].replace(/&amp;/g, '&') : entryUrl;
-
-        if (!token) {
-          console.log(`⚠️ [HTTP Reg #${seq}] CSRF _token missing in HTML`);
-          return resolve(null);
-        }
-
-        const postData = new URLSearchParams({
-          '_token': token,
-          'username': info.username,
-          'fullname': info.fullname,
-          'birthday': info.birthday,
-          'phone': info.phone,
-          'password': info.password
-        }).toString();
-
-        const postHeaders = {
-          ...headers,
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Content-Length': Buffer.byteLength(postData),
-          'Cookie': cookieHeader,
-          'Referer': entryUrl
-        };
-
-        const postReq = https.request(actionUrl, { method: 'POST', headers: postHeaders, timeout: 10000 }, (postRes) => {
-          let postBody = '';
-          postRes.on('data', chunk => postBody += chunk);
-          postRes.on('end', () => {
-            const dur = ((Date.now() - t0) / 1000).toFixed(2);
-            if (postBody.includes('loginSuccess')) {
-              const mRes = postBody.match(/appSDKexecute\('loginSuccess',\s*(\{.*?\})\);/);
-              if (mRes) {
-                try {
-                  const resObj = JSON.parse(mRes[1]);
-                  const dataBlock = resObj.data || {};
-                  const accBlock = dataBlock.account || {};
-                  const accId = String(accBlock.account_id || dataBlock.id || '');
-                  const funId = String(dataBlock.id || accBlock.account_id || '');
-                  const accessToken = String(resObj.access_token || 'r');
-
-                  const acc = {
-                    idx: Math.floor(Date.now() / 1000) * 100 + seq,
-                    username: info.username,
-                    password: info.password,
-                    accId,
-                    phone: info.phone,
-                    funid: funId,
-                    accessToken
-                  };
-                  console.log(`✅ [HTTP Reg #${seq}] Created ${info.username} (AccID: ${accId}) in ${dur}s`);
-                  return resolve(acc);
-                } catch (e) {}
-              }
+                const acc = {
+                  idx: Math.floor(Date.now() / 1000) * 100 + seq,
+                  username: info.username,
+                  password: info.password,
+                  accId,
+                  phone: info.phone,
+                  funid: funId,
+                  accessToken
+                };
+                console.log(`✅ [HTTP Reg #${seq}] Created ${info.username} (AccID: ${accId}) in ${dur}s`);
+                return resolve(acc);
+              } catch (e) {}
             }
-            console.log(`⚠️ [HTTP Reg #${seq}] Non-success response in ${dur}s`);
-            resolve(null);
-          });
-        });
-
-        postReq.on('error', (e) => {
-          console.log(`⚠️ [HTTP Reg #${seq}] POST Error: ${e.message}`);
+          }
+          console.log(`⚠️ [HTTP Reg #${seq}] Non-success response in ${dur}s: ${postBody.slice(0, 120).replace(/\s+/g, ' ')}`);
           resolve(null);
         });
-        postReq.write(postData);
-        postReq.end();
       });
+
+      postReq.on('error', (e) => {
+        console.log(`⚠️ [HTTP Reg #${seq}] POST Error: ${e.message}`);
+        resolve(null);
+      });
+      postReq.write(postData);
+      postReq.end();
     });
 
-    getReq.on('error', (e) => {
-      console.log(`⚠️ [HTTP Reg #${seq}] GET Error: ${e.message}`);
-      resolve(null);
-    });
-    getReq.end();
-  });
+  } catch (err) {
+    console.log(`⚠️ [HTTP Reg #${seq}] Exception: ${err.message}`);
+    return null;
+  }
 }
 
 /**
@@ -261,7 +283,7 @@ function registerViaHttp(info, seq) {
  */
 async function registerViaPlaywright(browser, info, workerId, seq) {
   const context = await browser.newContext({
-    userAgent: 'Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     viewport: { width: 414, height: 896 },
     locale: 'vi-VN'
   });
@@ -287,7 +309,15 @@ async function registerViaPlaywright(browser, info, workerId, seq) {
 
   try {
     await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-    await page.waitForSelector('#username', { timeout: 8000, state: 'attached' });
+    const userInp = await page.waitForSelector('#username', { timeout: 8000 }).catch(() => null);
+
+    if (!userInp) {
+      const curUrl = page.url();
+      const title = await page.title().catch(() => '');
+      const snip = (await page.content().catch(() => '')).slice(0, 150).replace(/\s+/g, ' ');
+      console.log(`⚠️ [Playwright #${seq}] #username not found. URL: ${curUrl}, Title: ${title}, Snippet: ${snip}`);
+      return null;
+    }
 
     await page.evaluate((data) => {
       const u = document.getElementById('username');
