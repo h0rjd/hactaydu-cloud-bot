@@ -12807,5 +12807,27 @@
     "lockedAt": "2026-11-08T05:26:40.464Z",
     "serverId": "610135",
     "serverName": "[S135] Lôi Âm Tự-S5"
+  },
+  {
+    "idx": 355141,
+    "username": "ntdung355141",
+    "password": "td2wdg58",
+    "accId": "722002455",
+    "phone": "0396631872",
+    "funid": "386755495",
+    "lockedAt": "2026-11-08T05:36:48.697Z",
+    "serverId": "610135",
+    "serverName": "[S135] Lôi Âm Tự-S5"
+  },
+  {
+    "idx": 355098,
+    "username": "ntdung355098",
+    "password": "dnskscd3",
+    "accId": "721995119",
+    "phone": "0985717278",
+    "funid": "386754759",
+    "lockedAt": "2026-11-08T05:37:10.123Z",
+    "serverId": "610135",
+    "serverName": "[S135] Lôi Âm Tự-S5"
   }
 ]
