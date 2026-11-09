@@ -17,13 +17,13 @@ function parseServers(data){
     const sidNum=Number(s.sid);
     const sNum=s.id||(sidNum>=600000?sidNum-610000:sidNum);
     const rawName=String(s.name||s.sid).replace(/^\[S\d+[^\]]*\]\s*/i,"").trim();
-    const formattedName=`[S${sNum}] ${rawName}`;
+    const formattedName=;
     return {
       sid:String(s.sid),
       id:sNum,
       name:formattedName,
       rawName,
-      wsUrl:s.server.replace(/\\\//g,"/"),
+      wsUrl:s.server.replace(/\\//g,"/"),
       status:String(s.status??"")
     };
   }).filter(s=>{
@@ -33,11 +33,11 @@ function parseServers(data){
   }).sort((a,b)=>Number(b.sid)-Number(a.sid));
 }
 async function requestServerList(host,accountId){
-  const url=new URL(`https://${host}/game/getServerList.php`);
+  const url=new URL();
   url.search=new URLSearchParams({lst:"all",ac:String(accountId),plt:"ios",v:"1",platform:"funtap",appid:"ios"});
   return new Promise((resolve,reject)=>{
     const req=https.get(url,{timeout:12000},res=>{
-      if(res.statusCode!==200){res.resume();return reject(Error(`SERVER_LIST_HTTP_${res.statusCode}`));}
+      if(res.statusCode!==200){res.resume();return reject(Error());}
       let body="";
       res.on("data",c=>{body+=c;if(body.length>2000000)req.destroy(Error("SERVER_LIST_TOO_LARGE"));});
       res.on("end",()=>{
@@ -55,12 +55,13 @@ async function requestServerList(host,accountId){
 }
 async function getServers(accountId){
   if(!/^\d+$/.test(String(accountId)))throw Error("SERVER_ACCOUNT_ID_REQUIRED");
-  const hosts=["funtap-xy.xinliugame.net","funtap-xy.ridvqqxa.com"];
+  const hosts=["funtap-xy.ridvqqxa.com","funtap-xy.xinliugame.net"];
   let lastErr=null;
   for(const host of hosts){
     try{return await requestServerList(host,accountId);}catch(err){lastErr=err;}
   }
-  throw lastErr||Error("SERVER_LIST_UNAVAILABLE");
+  console.warn("⚠️ [getServers] All hosts failed:", lastErr?.message, "-> using fallback S138");
+  return [{sid:"610138",id:138,name:"[S138] Lôi Âm Tự-S8",rawName:"Lôi Âm Tự-S8",wsUrl:"wss://wss-funtap-xy.xinliugame.net:9164/",status:"1"}];
 }
 async function latestServer(accountId){
   const rows=await getServers(accountId);
