@@ -17,13 +17,13 @@ function parseServers(data){
     const sidNum=Number(s.sid);
     const sNum=s.id||(sidNum>=600000?sidNum-610000:sidNum);
     const rawName=String(s.name||s.sid).replace(/^\[S\d+[^\]]*\]\s*/i,"").trim();
-    const formattedName=;
+    const formattedName=`[S${sNum}] ${rawName}`;
     return {
       sid:String(s.sid),
       id:sNum,
       name:formattedName,
       rawName,
-      wsUrl:s.server.replace(/\\//g,"/"),
+      wsUrl:s.server.replace(/\\\//g,"/"),
       status:String(s.status??"")
     };
   }).filter(s=>{
@@ -33,11 +33,11 @@ function parseServers(data){
   }).sort((a,b)=>Number(b.sid)-Number(a.sid));
 }
 async function requestServerList(host,accountId){
-  const url=new URL();
+  const url=new URL(`https://${host}/game/getServerList.php`);
   url.search=new URLSearchParams({lst:"all",ac:String(accountId),plt:"ios",v:"1",platform:"funtap",appid:"ios"});
   return new Promise((resolve,reject)=>{
     const req=https.get(url,{timeout:12000},res=>{
-      if(res.statusCode!==200){res.resume();return reject(Error());}
+      if(res.statusCode!==200){res.resume();return reject(Error(`SERVER_LIST_HTTP_${res.statusCode}`));}
       let body="";
       res.on("data",c=>{body+=c;if(body.length>2000000)req.destroy(Error("SERVER_LIST_TOO_LARGE"));});
       res.on("end",()=>{
