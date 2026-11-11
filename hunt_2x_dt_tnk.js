@@ -1067,9 +1067,15 @@ function generateRandomBirthday() {
 
 function fetchLatestServersDynamic() {
   return new Promise((resolve) => {
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+      'Accept': '*/*',
+      'Accept-Language': 'vi-VN,vi;q=0.9',
+      'Referer': 'https://rescdnft105vn.ridvqqxa.com/'
+    };
     const req = https.get(
       'https://funtap-xy.xinliugame.net/game/getServerList.php?lst=all&ac=720435142&plt=ios&v=1&platform=funtap&appid=ios',
-      { timeout: 6000 },
+      { headers, timeout: 6000 },
       (res) => {
         let data = '';
         res.on('data', (c) => (data += c));

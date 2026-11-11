@@ -35,8 +35,14 @@ function parseServers(data){
 async function requestServerList(host,accountId){
   const url=new URL(`https://${host}/game/getServerList.php`);
   url.search=new URLSearchParams({lst:"all",ac:String(accountId),plt:"ios",v:"1",platform:"funtap",appid:"ios"});
+  const headers={
+    'User-Agent':'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+    'Accept':'*/*',
+    'Accept-Language':'vi-VN,vi;q=0.9',
+    'Referer':'https://rescdnft105vn.ridvqqxa.com/'
+  };
   return new Promise((resolve,reject)=>{
-    const req=https.get(url,{timeout:12000},res=>{
+    const req=https.get(url,{headers,timeout:12000},res=>{
       if(res.statusCode!==200){res.resume();return reject(Error(`SERVER_LIST_HTTP_${res.statusCode}`));}
       let body="";
       res.on("data",c=>{body+=c;if(body.length>2000000)req.destroy(Error("SERVER_LIST_TOO_LARGE"));});
@@ -53,14 +59,24 @@ async function requestServerList(host,accountId){
     req.on("error",reject);
   });
 }
+let cachedServerRows=null;
 async function getServers(accountId){
   if(!/^\d+$/.test(String(accountId)))throw Error("SERVER_ACCOUNT_ID_REQUIRED");
-  const hosts=["funtap-xy.xinliugame.net","funtap-xy.ridvqqxa.com"];
+  const hosts=["funtap-xy.ridvqqxa.com","funtap-xy.xinliugame.net"];
   let lastErr=null;
   for(const host of hosts){
-    try{return await requestServerList(host,accountId);}catch(err){lastErr=err;}
+    try{
+      const rows=await requestServerList(host,accountId);
+      cachedServerRows=rows;
+      return rows;
+    }catch(err){lastErr=err;}
   }
-  throw lastErr||Error("SERVER_LIST_UNAVAILABLE");
+  if(cachedServerRows&&cachedServerRows.length){
+    console.warn("⚠️ [getServers] Hosts failed, using cached servers (latest:", cachedServerRows[0]?.sid, ")");
+    return cachedServerRows;
+  }
+  console.warn("⚠️ [getServers] All hosts failed:", lastErr?.message, "-> using fallback S144");
+  return [{sid:"610144",id:144,name:"[S144] Thái Hư Cung-S4",rawName:"Thái Hư Cung-S4",wsUrl:"wss://wss-funtap-xy.xinliugame.net:9170/",status:"1"}];
 }
 async function latestServer(accountId){
   const rows=await getServers(accountId);
