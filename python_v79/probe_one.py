@@ -1,4 +1,4 @@
-import asyncio,json,sys,pathlib,urllib.request,re
+import asyncio,json,sys,pathlib,urllib.request,urllib.parse,re
 import chay_web_auto as v
 from funtap_sdk_login import sdk_login
 # Match the user-provided screenshot: keep socket and retry the same code.
@@ -41,11 +41,21 @@ class ObservedClaims(Original):
 v.GiftcodeClaims=ObservedClaims
 def strict_auth(account_id,token=None):
  if not token or token=='r':raise RuntimeError('SDK_TOKEN_REQUIRED')
- u='https://funtap-xy.ridvqqxa.com//funtap/checkLogin.php?'+__import__('urllib.parse',fromlist=['urlencode']).urlencode({'access_token':token,'plt':'android','appVersion':'9.9.9.5'})
- with urllib.request.urlopen(u,timeout=15) as response:d=json.load(response)
- if int(d.get('code',0))!=200 or str(d.get('openid'))!=str(account_id):raise RuntimeError('GAME_AUTH_ACCOUNT_NOT_BOUND')
- if not d.get('time') or not d.get('authkey') or not d.get('userIp'):raise RuntimeError('AUTH_NOT_CONFIRMED')
- return {'timestamp':str(d['time']),'authKey':d['authkey'],'userIp':str(d.get('userIp') or '')}
+ headers={'User-Agent':'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148','Accept':'*/*','Referer':'https://rescdnft105vn.ridvqqxa.com/'}
+ hosts=['funtap-xy.xinliugame.net','funtap-xy.ridvqqxa.com']
+ last_err=None
+ for host in hosts:
+  try:
+   u=f'https://{host}/funtap/checkLogin.php?'+urllib.parse.urlencode({'access_token':token,'plt':'android','appVersion':'9.9.9.5'})
+   req=urllib.request.Request(u,headers=headers)
+   with urllib.request.urlopen(req,timeout=15) as resp:raw_text=resp.read().decode('utf-8',errors='ignore')
+   d=json.loads(raw_text)
+   if not d or int(d.get('code',0))!=200 or str(d.get('openid'))!=str(account_id):raise RuntimeError('GAME_AUTH_ACCOUNT_NOT_BOUND')
+   if not d.get('time') or not d.get('authkey') or not d.get('userIp'):raise RuntimeError('AUTH_NOT_CONFIRMED')
+   return {'timestamp':str(d['time']),'authKey':d['authkey'],'userIp':str(d.get('userIp') or '')}
+  except Exception as e:
+   last_err=e
+ raise (last_err if isinstance(last_err,RuntimeError) else RuntimeError('AUTH_NOT_CONFIRMED'))
 
 v.fetch_fresh_authkey=strict_auth
 async def main():
@@ -56,4 +66,4 @@ async def main():
  if not r.get('loginObserved'):raise RuntimeError(r.get('connectionError') or 'GAME_LOGIN_NOT_CONFIRMED')
  pathlib.Path(sys.argv[3]).write_text(json.dumps(r,ensure_ascii=False))
 try:asyncio.run(main())
-except Exception as e:print('V79_PROBE_FAILED',str(e) if isinstance(e,RuntimeError) else type(e).__name__);sys.exit(1)
+except Exception as e:print('V79_PROBE_FAILED',str(e) if isinstance(e,RuntimeError) else repr(e));sys.exit(1)
