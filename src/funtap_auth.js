@@ -12,9 +12,25 @@ async function login(account,request=fetch){
 }
 async function authKey(accId,account,request=fetch){
  const a=account||credentials(accId),session=await login({...a,accId:String(accId)},request);
- const url=new URL('https://funtap-xy.ridvqqxa.com//funtap/checkLogin.php');url.search=new URLSearchParams({access_token:session.token,plt:'android',appVersion:VERSION});
- const r=await request(url,{signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error('GAME_AUTH_HTTP_'+r.status);const d=await r.json();
- if(Number(d.code)!==200||String(d.openid)!==String(accId))throw Error('GAME_AUTH_ACCOUNT_NOT_BOUND');
- if(!d.time||!d.authkey||!d.userIp)throw Error('GAME_AUTH_NOT_CONFIRMED');return {ts:String(d.time),ak:String(d.authkey),userIp:String(d.userIp||'')};
+ const hosts=['funtap-xy.xinliugame.net','funtap-xy.ridvqqxa.com'];
+ const headers={
+  'User-Agent':'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+  'Accept':'*/*',
+  'Referer':'https://rescdnft105vn.ridvqqxa.com/'
+ };
+ let lastErr=null;
+ for(const host of hosts){
+  try{
+   const url=new URL(`https://${host}/funtap/checkLogin.php`);
+   url.search=new URLSearchParams({access_token:session.token,plt:'android',appVersion:VERSION});
+   const r=await request(url,{headers,signal:AbortSignal.timeout(15000)});
+   if(!r.ok)continue;
+   const d=await r.json();
+   if(!d||Number(d.code)!==200||String(d.openid)!==String(accId))throw Error('GAME_AUTH_ACCOUNT_NOT_BOUND');
+   if(!d.time||!d.authkey||!d.userIp)throw Error('GAME_AUTH_NOT_CONFIRMED');
+   return {ts:String(d.time),ak:String(d.authkey),userIp:String(d.userIp||'')};
+  }catch(err){lastErr=err;}
+ }
+ throw lastErr||Error('GAME_AUTH_NOT_CONFIRMED');
 }
 module.exports={login,authKey};
