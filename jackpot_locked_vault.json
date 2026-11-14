@@ -15348,5 +15348,27 @@
     "lockedAt": "2026-11-14T11:43:14.735Z",
     "serverId": "610150",
     "serverName": "[S150] Thái Hư Cung-S10"
+  },
+  {
+    "idx": 245613,
+    "username": "ntdung245613",
+    "password": "dn2qk4va",
+    "accId": "722004951",
+    "phone": "0375920107",
+    "funid": "386755749",
+    "lockedAt": "2026-11-14T12:21:15.523Z",
+    "serverId": "610150",
+    "serverName": "[S150] Thái Hư Cung-S10"
+  },
+  {
+    "idx": 250696,
+    "username": "ntdung250696",
+    "password": "td5qqrvt",
+    "accId": "722016021",
+    "phone": "0361337961",
+    "funid": "386756866",
+    "lockedAt": "2026-11-14T12:23:17.204Z",
+    "serverId": "610150",
+    "serverName": "[S150] Thái Hư Cung-S10"
   }
 ]
