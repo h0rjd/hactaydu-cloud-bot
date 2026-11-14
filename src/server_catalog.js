@@ -23,7 +23,7 @@ function parseServers(data){
       id:sNum,
       name:formattedName,
       rawName,
-      wsUrl:s.server.replace(/\\//g,"/"),
+      wsUrl:String(s.server).replaceAll('\/', '/'),
       status:String(s.status??"")
     };
   }).filter(s=>{
@@ -75,8 +75,8 @@ async function getServers(accountId){
     console.warn("⚠️ [getServers] Hosts failed, using cached servers (latest:", cachedServerRows[0]?.sid, ")");
     return cachedServerRows;
   }
-  console.warn("⚠️ [getServers] All hosts failed:", lastErr?.message, "-> using fallback S147");
-  return [{sid:"610147",id:147,name:"[S147] Thái Hư Cung-S7",rawName:"Thái Hư Cung-S7",wsUrl:"wss://wss-funtap-xy.xinliugame.net:9173/",status:"1"}];
+  console.warn("⚠️ [getServers] All hosts failed:", lastErr?.message, "-> using fallback S148");
+  return [{sid:"610148",id:148,name:"[S148] Thái Hư Cung-S8",rawName:"Thái Hư Cung-S8",wsUrl:"wss://wss-funtap-xy.xinliugame.net:9174/",status:"1"}];
 }
 async function latestServer(accountId){
   const rows=await getServers(accountId);
