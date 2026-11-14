@@ -15315,5 +15315,38 @@
     "lockedAt": "2026-11-14T11:30:41.634Z",
     "serverId": "610150",
     "serverName": "[S150] Thái Hư Cung-S10"
+  },
+  {
+    "idx": 125037,
+    "username": "ntdung125037",
+    "password": "dgva2pr9",
+    "accId": "721920444",
+    "phone": "0385328979",
+    "funid": "386746945",
+    "lockedAt": "2026-11-14T11:41:40.167Z",
+    "serverId": "610150",
+    "serverName": "[S150] Thái Hư Cung-S10"
+  },
+  {
+    "idx": 125847,
+    "username": "ntdung125847",
+    "password": "dnanhxt6",
+    "accId": "725024584",
+    "phone": "0392945615",
+    "funid": "387062044",
+    "lockedAt": "2026-11-14T11:42:39.024Z",
+    "serverId": "610150",
+    "serverName": "[S150] Thái Hư Cung-S10"
+  },
+  {
+    "idx": 125066,
+    "username": "ntdung125066",
+    "password": "dbytf398y",
+    "accId": "721923618",
+    "phone": "0966275845",
+    "funid": "386747280",
+    "lockedAt": "2026-11-14T11:43:14.735Z",
+    "serverId": "610150",
+    "serverName": "[S150] Thái Hư Cung-S10"
   }
 ]
