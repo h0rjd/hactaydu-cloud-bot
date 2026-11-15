@@ -15810,5 +15810,16 @@
     "lockedAt": "2026-11-15T07:53:34.149Z",
     "serverId": "610151",
     "serverName": "[S151] Quỷ Môn Quan-S1"
+  },
+  {
+    "idx": 325872,
+    "username": "ntdung325872",
+    "password": "ntd7phe5f",
+    "accId": "725038229",
+    "phone": "0376089399",
+    "funid": "387063447",
+    "lockedAt": "2026-11-15T08:15:36.582Z",
+    "serverId": "610152",
+    "serverName": "[S152] Quỷ Môn Quan-S2"
   }
 ]
