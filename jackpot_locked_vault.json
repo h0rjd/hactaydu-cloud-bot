@@ -16349,5 +16349,38 @@
     "lockedAt": "2026-11-16T02:48:46.259Z",
     "serverId": "610153",
     "serverName": "[S153] Quỷ Môn Quan-S3"
+  },
+  {
+    "idx": 930118,
+    "username": "ntdung930118",
+    "password": "dgdv57wa",
+    "accId": "725149759",
+    "phone": "0373678194",
+    "funid": "387077359",
+    "lockedAt": "2026-11-16T02:54:17.334Z",
+    "serverId": "610153",
+    "serverName": "[S153] Quỷ Môn Quan-S3"
+  },
+  {
+    "idx": 415001,
+    "username": "ntdung415001",
+    "password": "ntdgkrg6y",
+    "accId": "721985538",
+    "phone": "0986240807",
+    "funid": "386753787",
+    "lockedAt": "2026-11-16T02:54:48.757Z",
+    "serverId": "610153",
+    "serverName": "[S153] Quỷ Môn Quan-S3"
+  },
+  {
+    "idx": 415335,
+    "username": "ntdung415335",
+    "password": "tdjyabf5",
+    "accId": "725070476",
+    "phone": "0383312109",
+    "funid": "387066818",
+    "lockedAt": "2026-11-16T02:56:50.528Z",
+    "serverId": "610153",
+    "serverName": "[S153] Quỷ Môn Quan-S3"
   }
 ]
